@@ -1,0 +1,17 @@
+<div class="panel panel-default">
+    <div class="panel-heading">
+        Список справочников
+    </div>
+    <div class="list-group">
+        <div class="list-group-item" ng-repeat="item in rb_list">
+            <a href="#/edit/[[ item.code ]]/data">[[ item.name ]]</a>
+            <div class="pull-right">
+                <a href="#/edit/[[ item.code ]]/meta">Структура</a>
+            </div>
+        </div>
+        <div class="list-group-item text-right" ng-if="!!rb_list.length">
+            <a href="#/add">&plus; Добавить</a>
+        </div>
+        <div class="list-group-item" ng-if="! rb_list.length">Пока не создано ни одного справочника</div>
+    </div>
+</div>

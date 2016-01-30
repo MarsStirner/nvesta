@@ -1,0 +1,42 @@
+<div class="row">
+    <div class="col-md-3">
+        <div class="form-group">
+            <label>Код: </label>
+            <span ng-bind="meta.code"></span>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="form-group">
+            <label>Наименование: </label>
+            <span ng-bind="meta.name"></span>
+        </div>
+    </div>
+</div>
+<table class="table">
+    <thead>
+    <tr>
+        <th class="col-md-1"></th>
+        <th ng-repeat="field in meta.fields" ng-bind="field.key"></th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr ng-repeat="record in data">
+        <td>
+            <a href="" ng-if="!record.$edit" ng-click="editRecord(record)">Правка</a>
+            <a href="" ng-if="!!record.$edit" ng-click="cancelRecord(record)">Отмена</a>
+            <a href="" ng-if="!!record.$edit" ng-click="saveRecord(record)">Сохранить</a>
+        </td>
+        <td ng-repeat="field in meta.fields">
+            <div class="form-group">
+                <input class="form-control" type="text" ng-model="record.$edit[field.key]" ng-if="!!record.$edit"/>
+                <span class="form-control-static" ng-if="!record.$edit" ng-bind="record[field.key]"></span>
+            </div>
+        </td>
+    </tr>
+    </tbody>
+</table>
+<div class="row">
+    <div class="col-md-12 text-right">
+        <button class="btn btn-primary" ng-click="addRow()"><i class="fa fa-plus"></i> Добавить</button>
+    </div>
+</div>

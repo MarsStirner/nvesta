@@ -1,0 +1,71 @@
+<div>
+    <div class="row">
+        <div class="col-md-3">
+            <div class="form-group">
+                <label>Код</label>
+                <input type="text" class="form-control" ng-model="meta.code">
+            </div>
+        </div>
+        <div class="col-md-9">
+            <div class="form-group">
+                <label>Наименование</label>
+                <input type="text" class="form-control" ng-model="meta.name">
+            </div>
+        </div>
+    </div>
+    <table class="table">
+        <thead>
+        <tr>
+            <th class="col-md-3">Ключ поля</th>
+            <th class="col-md-9">Связанные справочники</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="field in meta.fields">
+            <td>
+                <div class="form-group">
+                    <input type="text" class="form-control" ng-model="field.key" ng-if="field.is_new"/>
+                    <label ng-if="!field.is_new" ng-bind="field.key" class="form-control-static"></label>
+                </div>
+                <div class="form-group">
+                    <label class="control-label"><input type="checkbox" ng-model="field.allow_link"> Связать</label>
+                </div>
+            </td>
+            <td>
+                <div ng-if="field.allow_link">
+                    <div class="form-group">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label><input type="checkbox" ng-model="field.link.list"> Как список</label>
+                            </div>
+                            <div class="col-md-8">
+                                <select ng-options="item as item.name for item in rb_list track by item.code" ng-model="field.link.refbook" class="form-control"></select>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="form-group">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <input class="form-control" ng-model="field.link.key" placeholder="Виртуальное поле в нашем справочнике">
+                            </div>
+                            <div class="col-md-6">
+                                <select ng-options="item as item.key for item in field.link.refbook.fields track by item.key"
+                                        ng-model="field.link.linked_field_obj" class="form-control"></select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2" class="text-right">
+                <a class="pseudo-btn" href="#/"><i class="fa fa-arrow-left"></i> Назад</a>
+                <button ng-click="add_field()" class="btn btn-primary"><i class="fa fa-plus"></i> Добавить</button>
+                <button ng-click="save()" class="btn btn-success"><i class="fa fa-save"></i> Сохранить</button>
+                <a class="pseudo-btn" href="#/edit/[[rb_code]]/data" ng-if="meta._id"><i class="fa fa-pencil"></i> Данные</a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>

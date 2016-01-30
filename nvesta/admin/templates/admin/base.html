@@ -1,0 +1,36 @@
+{{- g.fanstatic.needs('library.static:group') -}}
+<!DOCTYPE html>
+<html lang="en" ng-app="nVesta">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Управление справочниками{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+{#    <base href="{{ url_for('.index') }}">#}
+    {{ g.fanstatic.top }}
+</head>
+<body>
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar"
+                        aria-expanded="false" aria-controls="navbar">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="#/">Hestia</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container" ng-view=""></div>
+
+{{ g.fanstatic.bottom }}
+<script src="{{ url_for('static', filename="hitsl.power.js") }}"></script>
+<script src="{{ url_for('static', filename="hitsl.core.js") }}"></script>
+<script src="{{ url_for('static', filename="hitsl.config.js") }}"></script>
+<script src="{{ url_for('static', filename="hitsl.apis.js") }}"></script>
+<script src="{{ url_for('.static', filename="js/nVesta.js") }}"></script>
+</body>
+</html>
