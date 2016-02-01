@@ -35,6 +35,9 @@ __author__ = 'viruzzz-kun'
 
 
 class RefBookRecord(object):
+    """
+    :type meta: RefBookMeta
+    """
     meta = None
 
     def __init__(self, record=None):
@@ -61,6 +64,17 @@ class RefBookRecord(object):
             meta = rb_meta
         return RefBookRecordF
 
+    def __contains__(self, item):
+        return item in self.meta
+
+    def __getitem__(self, item):
+        if item in self.meta:
+            return self.data.get(item)
+
+    def __setitem__(self, key, value):
+        if key in self.meta:
+            self.data[key] = value
+
     def __json__(self):
         result = {}
         for description in self.meta.fields:
@@ -81,12 +95,44 @@ class RefBookRecord(object):
         return result
 
 
+class PrimaryLinkMeta(object):
+    left_rb_obj = None
+    left_field = None
+    right_rb_code = None
+    right_field = None
+
+    def __init__(self, left_rb, data=None):
+        self.left_rb_obj = left_rb
+        if data:
+            self.update(data)
+
+    def get_rb_record(self):
+        if self.left_field and self.right_rb_code and self.right_field:
+            return {
+                'left_field': self.left_field,
+                'right_rb': self.right_rb_code,
+                'right_field': self.right_field,
+            }
+        else:
+            return None
+
+    def update(self, data):
+        self.left_field = data.get('left_field')
+        self.right_rb_code = data.get('right_rb')
+        self.right_field = data.get('right_field')
+
+    def __json__(self):
+        return self.get_rb_record()
+
+
 class RefBookMeta(object):
     id = None
+    oid = None
     code = None
     name = None
     version = 0
     fields = None
+    primary_link = None
 
     def __init__(self, record=None):
         if record is not None:
@@ -108,6 +154,8 @@ class RefBookMeta(object):
         self.code = record.get('code')
         self.name = record.get('name')
         self.version = record.get('version')
+        self.oid = record.get('oid')
+        self.primary_link = PrimaryLinkMeta(self, record.get('primary_link'))
         self.fields = [
             {
                 'key': field.get('key'),
@@ -124,9 +172,17 @@ class RefBookMeta(object):
             'code': self.code,
             'name': self.name,
             'version': self.version,
+            'oid': self.oid,
+            'primary_link': self.primary_link.get_rb_record(),
             'fields': self.fields
         }
         return result
+
+    def __contains__(self, item):
+        for i in self.fields:
+            if i.get('code') == item:
+                return True
+        return False
 
     def reshape(self):
         if self.id:
@@ -146,20 +202,33 @@ class RefBookMeta(object):
             'name': self.name,
             'fields': self.fields,
             'version': self.version,
+            'oid': self.oid,
+            'primary_link': self.primary_link,
             '_id': str(self.id) if isinstance(self.id, bson.ObjectId) else self.id
         }
         return result
 
 
 class RefBook(object):
+    """
+    :type meta: RefBookMeta
+    :type collection: pymongo.collection.Collection
+    """
     meta = None
     collection = None
     record_factory = None
 
-    def find(self, kwargs):
+    def find(self, kwargs, sort=None, limit=None, skip=None):
+        cursor = self.collection.find(kwargs)
+        if limit:
+            cursor = cursor.limit(limit)
+        if skip:
+            cursor = cursor.skip(skip)
+        if sort:
+            cursor = cursor.sort(sort)
         return map(
             self.record_factory,
-            self.collection.find(kwargs)
+            cursor,
         )
 
     def find_one(self, kwargs):
@@ -186,6 +255,10 @@ class RefBook(object):
         else:
             data['_id'] = self.collection.insert(data)
         return rb_record
+
+    def get_primary_linked_rb(self):
+        if self.meta.primary_link.right_rb_code:
+            return RefBookRegistry.get(self.meta.primary_link.right_rb_code)
 
 
 class RefBookRegistry(object):

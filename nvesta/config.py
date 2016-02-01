@@ -20,3 +20,6 @@ MONGO_DBNAME = 'nvesta'
 SIMPLELOGS_URL = 'http://127.0.0.1:8080'
 NSI_SOAP = 'http://nsi.rosminzdrav.ru/wsdl/SOAP-server.v2.php?wsdl'
 NSI_TOKEN = ''
+
+CACHE_TYPE = 'filesystem'
+CACHE_DIR = '/tmp/cache/nvesta'

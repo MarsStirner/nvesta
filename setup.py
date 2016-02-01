@@ -37,6 +37,7 @@ setup(
         'Flask',
         'Flask-Fanstatic',
         'Flask-PyMongo',
+        'Flask-Cache',
         'Requests',
         'js.bootstrap',
         'js.angular',
