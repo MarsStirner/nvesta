@@ -96,7 +96,9 @@ angular.module('nVesta', ['ngRoute', 'hitsl.core'])
     $scope.rb_list = RefBookRegistry.rb_list;
     RefBookRegistry.reload();
 }])
-.controller('EditRbMetaController', ['$scope', '$routeParams', '$location', 'RefBookApi', 'RefBookRegistry', function ($scope, $routeParams, $location, RefBookApi, RefBookRegistry) {
+.controller('EditRbMetaController', [
+    '$scope', '$routeParams', '$location', 'RefBookApi', 'RefBookRegistry', 'NotificationService',
+    function ($scope, $routeParams, $location, RefBookApi, RefBookRegistry, NotificationService) {
     $scope.rb_list = RefBookRegistry.rb_list;
     $scope.meta = {};
     $scope.rb_code = $routeParams.rb_code;
@@ -124,6 +126,7 @@ angular.module('nVesta', ['ngRoute', 'hitsl.core'])
     };
     var on_finish = function (result) {
         $location.url('/edit/{0}/meta'.format(result.code));
+        NotificationService.notify(200, 'Структура успешно сохранена', 'success', 10000);
         RefBookRegistry.reload();
         return result;
     };
@@ -181,7 +184,9 @@ angular.module('nVesta', ['ngRoute', 'hitsl.core'])
         })
     };
 }])
-.controller('EditRbDataController', ['$scope', '$routeParams', '$location', 'RefBookApi', 'RefBookRegistry', function ($scope, $routeParams, $location, RefBookApi, RefBookRegistry) {
+.controller('EditRbDataController', [
+    '$scope', '$routeParams', '$location', 'RefBookApi', 'NotificationService',
+    function ($scope, $routeParams, $location, RefBookApi, NotificationService) {
     var meta = $scope.meta = {};
     var rb_code = $scope.rb_code = $routeParams.rb_code;
     var data = $scope.data = [];
@@ -212,17 +217,19 @@ angular.module('nVesta', ['ngRoute', 'hitsl.core'])
             _.replace_array(data, _.without(data, record))
         }
     };
+    var after_save_record_factory = function (record) {
+        return function (result) {
+            angular.extend(record, result);
+            record.$edit = undefined;
+            NotificationService.notify(200, 'Запись сохранена', 'success', 10000);
+            return result;
+        }
+    };
     $scope.saveRecord = function (record) {
         if (!record._id) {
-            RefBookApi.rb_data_create(record.$edit, rb_code).then(function (result) {
-                angular.extend(record, result);
-                record.$edit = undefined;
-            })
+            RefBookApi.rb_data_create(record.$edit, rb_code).then(after_save_record_factory(record))
         } else {
-            RefBookApi.rb_data_update(record.$edit, rb_code, record._id).then(function (result) {
-                angular.extend(record, result);
-                record.$edit = undefined;
-            });
+            RefBookApi.rb_data_update(record.$edit, rb_code, record._id).then(after_save_record_factory(record));
         }
     };
     $scope.deleteRecord = function (record) {
