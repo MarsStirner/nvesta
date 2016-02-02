@@ -103,24 +103,35 @@ angular.module('nVesta', ['ngRoute', 'hitsl.core'])
     $scope.meta = {};
     $scope.rb_code = $routeParams.rb_code;
     var on_load = function (rb_meta) {
-        _.extend($scope.meta, rb_meta, {
-            fields: _.map(rb_meta.fields, function (field) {
-                if (!!field.link) {
-                    var code = _.safe_traverse(field, ['link', 'code']);
-                    if (code) {
-                        var ref_book = RefBookRegistry.get(code);
-                        var linked_field_obj = _.find(ref_book.fields, {key: field.link.linked_field});
-                        _.extend(field.link, {
-                            refbook: ref_book,
-                            linked_field_obj: linked_field_obj
-                        })
+        var fields = _.map(rb_meta.fields, function (field) {
+            if (!!field.link) {
+                var code = _.safe_traverse(field, ['link', 'code']);
+                if (code) {
+                    var ref_book = RefBookRegistry.get(code);
+                    var linked_field_obj = _.find(ref_book.fields, {key: field.link.linked_field});
+                    _.extend(field.link, {
+                        refbook: ref_book,
+                        linked_field_obj: linked_field_obj
+                    })
 
-                    }
                 }
-                return _.extend(field, {
-                    allow_link: !! field.link
-                });
+            }
+            return _.extend(field, {
+                allow_link: !! field.link
+            });
+        }),
+            primary_link = {};
+        if (rb_meta.primary_link) {
+            var refbook = RefBookRegistry.get(rb_meta.primary_link.right_rb);
+            angular.extend(primary_link, {
+                refbook: refbook,
+                left: _.find(fields, function (field) { return field.key == rb_meta.primary_link.left_field }),
+                right: _.find(refbook.fields, function (field) { return field.key == rb_meta.primary_link.right_field })
             })
+        }
+        _.extend($scope.meta, rb_meta, {
+            fields: fields,
+            primary_link: primary_link
         });
         return rb_meta
     };
@@ -131,13 +142,21 @@ angular.module('nVesta', ['ngRoute', 'hitsl.core'])
         return result;
     };
     var prepare_meta = function () {
+        var meta = $scope.meta;
         return {
-            _id: $scope.meta._id,
-            code: $scope.meta.code,
-            name: $scope.meta.name,
-            version: $scope.meta.version,
+            _id: meta._id,
+            code: meta.code,
+            name: meta.name,
+            oid: meta.oid,
+            description: meta.description,
+            primary_link: (meta.primary_link)?{
+                left_field: meta.primary_link.left.key,
+                right_field: meta.primary_link.right.key,
+                right_rb: meta.primary_link.refbook.code
+            }:null,
+            version: meta.version,
             fields: _.map(
-                $scope.meta.fields,
+                meta.fields,
                 function (field) {
                     return {
                         key: field.key,

@@ -15,22 +15,22 @@
 <table class="table">
     <thead>
     <tr>
-        <th class="col-md-1"></th>
         <th ng-repeat="field in meta.fields" ng-bind="field.key"></th>
+        <th class="col-md-1"></th>
     </tr>
     </thead>
     <tbody>
     <tr ng-repeat="record in data">
-        <td>
-            <a href="" ng-if="!record.$edit" ng-click="editRecord(record)">Правка</a>
-            <a href="" ng-if="!!record.$edit" ng-click="cancelRecord(record)">Отмена</a>
-            <a href="" ng-if="!!record.$edit" ng-click="saveRecord(record)">Сохранить</a>
-        </td>
         <td ng-repeat="field in meta.fields">
             <div class="form-group">
                 <input class="form-control" type="text" ng-model="record.$edit[field.key]" ng-if="!!record.$edit"/>
                 <span class="form-control-static" ng-if="!record.$edit" ng-bind="record[field.key]"></span>
             </div>
+        </td>
+        <td>
+            <a href="" ng-if="!record.$edit" ng-click="editRecord(record)">Правка</a>
+            <a href="" ng-if="!!record.$edit" ng-click="cancelRecord(record)">Отмена</a>
+            <a href="" ng-if="!!record.$edit" ng-click="saveRecord(record)">Сохранить</a>
         </td>
     </tr>
     </tbody>

@@ -21,3 +21,6 @@ div.abs-alert {
 
     z-index: 10000;
 }
+.pad10px {
+    padding: 10px;
+}

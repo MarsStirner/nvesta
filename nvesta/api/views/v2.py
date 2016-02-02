@@ -17,10 +17,12 @@ def rb_list_get():
     :return:
     """
     rb_list = RefBookRegistry.list()
-    return [
+    result = [
         d.meta
         for d in rb_list
     ]
+    result.sort(key=lambda meta: meta.code)
+    return result
 
 
 @module.route('/v2/rb/', methods=['POST'])
@@ -32,7 +34,6 @@ def rb_post():
     """
     j = flask.request.get_json()
     rb = RefBookRegistry.create(j['code'], j['name'])
-    # rb.meta.reshape()
     return rb.meta
 
 
@@ -73,8 +74,10 @@ def rb_records_get(rb_code):
     :param rb_code:
     :return:
     """
+    skip = flask.request.args.get('skip') or None
+    limit = flask.request.args.get('limit') or 100
     rb = RefBookRegistry.get(rb_code)
-    return rb.find({})
+    return rb.find({}, 'code', limit=limit, skip=skip)
 
 
 @module.route('/v2/rb/<rb_code>/data/id/<rec_id>/', methods=['GET'])

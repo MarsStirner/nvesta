@@ -130,6 +130,7 @@ class RefBookMeta(object):
     oid = None
     code = None
     name = None
+    description = None
     version = 0
     fields = None
     primary_link = None
@@ -152,7 +153,8 @@ class RefBookMeta(object):
         else:
             self.id = None
         self.code = record.get('code')
-        self.name = record.get('name')
+        self.name = record.get('name') or record.get('code')
+        self.description = record.get('description')
         self.version = record.get('version')
         self.oid = record.get('oid')
         self.primary_link = PrimaryLinkMeta(self, record.get('primary_link'))
@@ -171,6 +173,7 @@ class RefBookMeta(object):
         result = {
             'code': self.code,
             'name': self.name,
+            'description': self.description,
             'version': self.version,
             'oid': self.oid,
             'primary_link': self.primary_link.get_rb_record(),
@@ -200,6 +203,7 @@ class RefBookMeta(object):
         result = {
             'code': self.code,
             'name': self.name,
+            'description': self.description,
             'fields': self.fields,
             'version': self.version,
             'oid': self.oid,

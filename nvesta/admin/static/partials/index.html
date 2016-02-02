@@ -1,17 +1,26 @@
-<div class="panel panel-default">
-    <div class="panel-heading">
-        Список справочников
-    </div>
-    <div class="list-group">
-        <div class="list-group-item" ng-repeat="item in rb_list">
-            <a href="#/edit/[[ item.code ]]/data">[[ item.name ]]</a>
-            <div class="pull-right">
-                <a href="#/edit/[[ item.code ]]/meta">Структура</a>
-            </div>
-        </div>
-        <div class="list-group-item text-right" ng-if="!!rb_list.length">
-            <a href="#/add">&plus; Добавить</a>
-        </div>
-        <div class="list-group-item" ng-if="! rb_list.length">Пока не создано ни одного справочника</div>
-    </div>
+<div class="container">
+    <span class="input-group">
+        <input type="text" class="form-control" ng-model="_query" placeholder="Поиск">
+        <span class="input-group-addon"><i class="fa fa-search"></i></span>
+    </span>
+    <table class="table">
+        <thead>
+        <tr>
+            <th class="col-md-11" colspan="2">Список справочников</th>
+            <th class="col-md-1 text-right"><a href="#/add" class="text-nowrap">&plus; Добавить</a></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="item in rb_list | filter:_query" ng-if="!! rb_list.length">
+            <td ng-bind="item.code"></td>
+            <td><a href="#/edit/[[ item.code ]]/data">[[ item.name ]]</a></td>
+            <td class="text-right"><a href="#/edit/[[ item.code ]]/meta">Структура</a></td>
+        </tr>
+        <tr ng-if="! rb_list.length">
+            <td colspan="2" class="text-center">
+                Пока не создано ни одного справочника
+            </td>
+        </tr>
+        </tbody>
+    </table>
 </div>
