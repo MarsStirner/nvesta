@@ -1,7 +1,8 @@
 <div class="container">
     <span class="input-group">
-        <input type="text" class="form-control" ng-model="_query" placeholder="Поиск">
         <span class="input-group-addon"><i class="fa fa-search"></i></span>
+        <input type="text" class="form-control" ng-model="_query" placeholder="Поиск" />
+        <span class="input-group-btn"><button class="btn btn-default" ng-click="_query=''"><i class="fa fa-times"></i></button></span>
     </span>
     <table class="table">
         <thead>

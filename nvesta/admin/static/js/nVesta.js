@@ -103,7 +103,8 @@ angular.module('nVesta', ['ngRoute', 'hitsl.core'])
     $scope.meta = {};
     $scope.rb_code = $routeParams.rb_code;
     var on_load = function (rb_meta) {
-        var fields = _.map(rb_meta.fields, function (field) {
+        var primary_link = {},
+            fields = _.map(rb_meta.fields, function (field) {
             if (!!field.link) {
                 var code = _.safe_traverse(field, ['link', 'code']);
                 if (code) {
@@ -119,9 +120,8 @@ angular.module('nVesta', ['ngRoute', 'hitsl.core'])
             return _.extend(field, {
                 allow_link: !! field.link
             });
-        }),
-            primary_link = {};
-        if (rb_meta.primary_link) {
+        });
+        if (!!rb_meta.primary_link) {
             var refbook = RefBookRegistry.get(rb_meta.primary_link.right_rb);
             angular.extend(primary_link, {
                 refbook: refbook,
@@ -129,7 +129,7 @@ angular.module('nVesta', ['ngRoute', 'hitsl.core'])
                 right: _.find(refbook.fields, function (field) { return field.key == rb_meta.primary_link.right_field })
             })
         }
-        _.extend($scope.meta, rb_meta, {
+        angular.extend($scope.meta, rb_meta, {
             fields: fields,
             primary_link: primary_link
         });
@@ -149,7 +149,7 @@ angular.module('nVesta', ['ngRoute', 'hitsl.core'])
             name: meta.name,
             oid: meta.oid,
             description: meta.description,
-            primary_link: (meta.primary_link)?{
+            primary_link: (meta.primary_link.left && meta.primary_link.right && meta.primary_link.refbook)?{
                 left_field: meta.primary_link.left.key,
                 right_field: meta.primary_link.right.key,
                 right_rb: meta.primary_link.refbook.code
@@ -178,6 +178,16 @@ angular.module('nVesta', ['ngRoute', 'hitsl.core'])
     RefBookRegistry.reload();
     if (!_.isUndefined($scope.rb_code)) {
         RefBookApi.rb_meta_view($routeParams.rb_code).then(on_load)
+    } else {
+        angular.extend($scope.meta, {
+            code: '',
+            name: '',
+            oid: '',
+            description: '',
+            version: 0,
+            fields: [],
+            primary_link: {}
+        })
     }
     $scope.save = function () {
         var meta = prepare_meta();

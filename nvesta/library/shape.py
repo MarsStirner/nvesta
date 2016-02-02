@@ -294,17 +294,15 @@ class RefBookRegistry(object):
         return cls.ref_books[code]
 
     @classmethod
-    def create(cls, code, name):
-        existing = mongo.db['refbooks'].find_one({'code': code})
+    def create(cls, raw_meta):
+        existing = mongo.db['refbooks'].find_one({'code': raw_meta['code']})
         if existing:
             raise Exception
-        meta = RefBookMeta.from_db_record({
-            'name': name,
-            'code': code,
-            'fields': [],
-        })
+        raw_meta.pop('_id', None)
+        meta = RefBookMeta.from_db_record(raw_meta)
         meta.id = mongo.db['refbooks'].insert(meta.to_db_record())
-        mongo.db.create_collection('refbook.%s' % code)
+        mongo.db.create_collection('refbook.%s' % meta.code)
+        meta.reshape()
         return cls.refbook_from_meta(meta)
 
     @classmethod

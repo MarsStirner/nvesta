@@ -33,7 +33,7 @@ def rb_post():
     :return:
     """
     j = flask.request.get_json()
-    rb = RefBookRegistry.create(j['code'], j['name'])
+    rb = RefBookRegistry.create(j)
     return rb.meta
 
 
