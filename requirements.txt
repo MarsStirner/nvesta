@@ -1,6 +1,7 @@
 Flask
 Flask-Fanstatic
 Flask-PyMongo
+Flask-Cache
 Requests
 js.bootstrap
 git+https://github.com/hitsl/js.underscore.git#egg=js.underscore
