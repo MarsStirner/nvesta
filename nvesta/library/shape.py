@@ -193,6 +193,11 @@ class RefBookMeta(object):
 
     def reshape(self):
         if self.id:
+            existing = mongo.db['refbooks'].find_one({'_id': self.id})
+            if existing:
+                prev_code = existing['code']
+                if prev_code != self.code:
+                    mongo.db['refbooks.%s' % prev_code].rename('refbooks.%s' % self.code)
             mongo.db['refbooks'].update_one(
                 {'_id': self.id},
                 {'$set': self.to_db_record()},

@@ -2,21 +2,20 @@
 import bson
 from flask import request
 
-from hitsl_utils.api import ApiException, api_method, crossdomain
+from hitsl_utils.api import ApiException, crossdomain
+from nvesta.api.views.v1.apiutils import v1_api_method
 from nvesta.library.shape import RefBookRegistry
 from nvesta.library.utils import prepare_find_params, force_json
 from nvesta.api.app import module
 
 """API для работы с конкретным справочником"""
-#decorators = [user_required]
-
 
 base_url = '/v1/<string:code>/'
 
 
 @module.route('/v1/<rb_code>/', methods=['GET'])
-@crossdomain('*', methods=['ПУЕ'])
-@api_method
+@crossdomain('*', methods=['GET'])
+@v1_api_method
 def v1_dictionary_list(rb_code):
     rb = RefBookRegistry.get(rb_code)
     if not rb:
@@ -26,27 +25,27 @@ def v1_dictionary_list(rb_code):
 
 @module.route('/v1/<rb_code>/<doc_id>', methods=['GET'])
 @crossdomain('*', methods=['GET'])
-@api_method
+@v1_api_method
 def v1_dictionary_get_document(rb_code, doc_id):
     rb = RefBookRegistry.get(rb_code)
-    return rb.find({'_id': bson.ObjectId(doc_id)})
+    return rb.find('_id', doc_id)
 
 
 @module.route('/v1/<rb_code>/<field>/<value>/', methods=['GET'])
 @crossdomain('*', methods=['GET'])
-@api_method
+@v1_api_method
 def v1_get_document_by_field(rb_code, field, value):
     if field == 'id':
         value = int(value)
     elif field == '_id':
         value = bson.ObjectId(value)
     rb = RefBookRegistry.get(rb_code)
-    return rb.find({field: value})
+    return rb.find_one(field, value)
 
 
 @module.route('/v1/<rb_code>/', methods=['POST'])
 @crossdomain('*', methods=['POST'])
-@api_method
+@v1_api_method
 def v1_dictionary_post(rb_code):
     data = force_json(request)
     rb = RefBookRegistry.get(rb_code)
@@ -64,7 +63,7 @@ def v1_dictionary_post(rb_code):
 
 @module.route('/v1/<rb_code>/<document_id>/', methods=['PUT'])
 @crossdomain('*', methods=['PUT'])
-@api_method
+@v1_api_method
 def dictionary_put(rb_code, document_id):
     data = force_json(request)
     rb = RefBookRegistry.get(rb_code)
@@ -76,7 +75,7 @@ def dictionary_put(rb_code, document_id):
 
 @module.route('/v1/rb_code/<document_id>/', methods=['DELETE'])
 @crossdomain('*', methods=['DELETE'])
-@api_method
+@v1_api_method
 def dictionary_delete(rb_code, document_id):
     raise NotImplemented
 
@@ -84,7 +83,7 @@ def dictionary_delete(rb_code, document_id):
 # TODO: По возможности отказаться от хвоста или хотя бы сменить ему имя
 @module.route('/find/<code>/', methods=['POST'])
 @crossdomain('*', methods=['POST'])
-@api_method
+@v1_api_method
 def find_data(code):
     data = force_json(request)
     rb = RefBookRegistry.get(code)

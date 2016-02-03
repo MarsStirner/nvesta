@@ -6,7 +6,7 @@ __author__ = 'viruzzz-kun'
 DEBUG = True
 
 SERVER_HOST = '127.0.0.1'
-SERVER_PORT = 5004
+SERVER_PORT = 5006
 
 WTF_CSRF_ENABLED = True
 SECRET_KEY = '\xd0\x93l\x97{\xabU\x0c\x14\xb8k\xad\x99\xcc]Jut|\x02\xa7\x80\\1D\x91\xc8\xfc\x90\xaa\xd2c'

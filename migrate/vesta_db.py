@@ -66,7 +66,55 @@ def migrate():
         db_nvesta['refbooks'].insert(n_description)
 
 
+def migrate_2():
+    client = pymongo.MongoClient('10.1.2.11')
+
+    db_vesta = client['vesta']
+    db_nvesta = client['nvesta']
+
+    dont_touch_names = set(description['code'] for description in db_vesta['dict_names'].find())
+
+    for code in db_vesta.collection_names(False):
+        if code in dont_touch_names:
+            continue
+
+        v_collection = db_vesta[code]
+        n_collection = db_nvesta['refbook.' + code]
+
+        count = v_collection.count()
+
+        print 'Transferring', str(count).rjust(6), code
+
+        if code == 'dict_names':
+            print '...Skipped'
+            continue
+
+        field_codes = set()
+
+        primary_link = None
+        linked = None
+
+        if count > 0:
+            n_collection.insert(v_collection.find())
+            for row in v_collection.find():
+                field_codes |= set(row.keys())
+        else:
+            print '...Not transferring data and fields'
+
+        field_codes.discard('_id')
+
+        n_description = {
+            'code': code,
+            'name': code,
+            'description': '',
+            'oid': '',
+            'fields': map(produce_fd, sorted(field_codes)),
+            'primary_link': primary_link,
+        }
+
+        db_nvesta['refbooks'].insert(n_description)
+
 if __name__ == "__main__":
-    migrate()
+    migrate_2()
 
 
