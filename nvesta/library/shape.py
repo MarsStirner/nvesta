@@ -34,6 +34,10 @@ __author__ = 'viruzzz-kun'
 # }
 
 
+class Undefined(object):
+    pass
+
+
 class RefBookRecord(object):
     """
     :type meta: RefBookMeta
@@ -235,13 +239,18 @@ class RefBook(object):
             cursor,
         )
 
-    def find_one(self, kwargs):
+    def find_one(self, kwargs, rec_id=Undefined):
         """
         :param kwargs:
         :return:
         :rtype: RefBookRecord
         """
-        return self.record_factory(self.collection.find_one(kwargs))
+        if rec_id is not Undefined:
+            if kwargs == '_id' and isinstance(rec_id, basestring):
+                rec_id = bson.ObjectId(rec_id)
+            return self.record_factory(self.collection.find_one({kwargs: rec_id}))
+        else:
+            return self.record_factory(self.collection.find_one(kwargs))
 
     def save(self, rb_record):
         """
@@ -251,13 +260,13 @@ class RefBook(object):
         """
         data = rb_record.data
         if data.get('_id'):
-            self.collection.replace_one(
+            self.collection.update_one(
                 {'_id': data['_id']},
                 data,
                 True
             )
         else:
-            data['_id'] = self.collection.insert(data)
+            self.collection.insert_one(data)
         return rb_record
 
     def get_primary_linked_rb(self):

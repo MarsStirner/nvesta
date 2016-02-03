@@ -80,9 +80,9 @@ def rb_records_get(rb_code):
     return rb.find({}, 'code', limit=limit, skip=skip)
 
 
-@module.route('/v2/rb/<rb_code>/data/id/<rec_id>/', methods=['GET'])
+@module.route('/v2/rb/<rb_code>/data/<field>/<rec_id>/', methods=['GET'])
 @api_method
-def rb_record_get_id(rb_code, rec_id):
+def rb_record_get_id(rb_code, field, rec_id):
     """
     Получение записи из справочника
     :param rb_code:
@@ -90,39 +90,15 @@ def rb_record_get_id(rb_code, rec_id):
     :return:
     """
     rb = RefBookRegistry.get(rb_code)
-    record = rb.find_one({'_id': bson.ObjectId(rec_id)})
+    record = rb.find_one(field, rec_id)
     return record
 
 
-@module.route('/v2/rb/<rb_code>/data/id/<rec_id>/', methods=['PUT'])
+@module.route('/v2/rb/<rb_code>/data/<field>/<rec_id>/', methods=['PUT'])
 @api_method
-def rb_record_put_id(rb_code, rec_id):
+def rb_record_put_id(rb_code, field, rec_id):
     rb = RefBookRegistry.get(rb_code)
-    record = rb.find_one({'_id': bson.ObjectId(rec_id)})
-    record.update(flask.request.get_json())
-    rb.save(record)
-    return record
-
-
-@module.route('/v2/rb/<rb_code>/data/code/<rec_code>/', methods=['GET'])
-@api_method
-def rb_record_get_code(rb_code, rec_code):
-    """
-    Получение записи из справочника
-    :param rb_code:
-    :param rec_code:
-    :return:
-    """
-    rb = RefBookRegistry.get(rb_code)
-    record = rb.find_one({'code': rec_code})
-    return record
-
-
-@module.route('/v2/rb/<rb_code>/data/code/<rec_code>/', methods=['PUT'])
-@api_method
-def rb_record_put_code(rb_code, rec_code):
-    rb = RefBookRegistry.get(rb_code)
-    record = rb.find_one({'code': rec_code})
+    record = rb.find_one(field, rec_id)
     record.update(flask.request.get_json())
     rb.save(record)
     return record
