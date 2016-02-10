@@ -79,6 +79,11 @@ class RefBookRecord(object):
         if key in self.meta:
             self.data[key] = value
 
+    def get(self, item, default=None):
+        if item in self.meta:
+            return self.data.get(item, default)
+        return default
+
     def __json__(self):
         result = {}
         for description in self.meta.fields:
