@@ -1,7 +1,7 @@
 import flask
 
 from nvesta.library import shape
-from nvesta.systemwide import app, mongo, fanstatic
+from nvesta.systemwide import app, mongo, fanstatic, cache
 from nvesta.admin.app import module as admin_module
 from nvesta.api.app import module as api_module
 
@@ -11,6 +11,7 @@ app.config.from_object(config)
 
 mongo.init_app(app)
 fanstatic.init_app(app)
+cache.init_app(app)
 
 with app.app_context():
     shape.RefBookRegistry.bootstrap()
