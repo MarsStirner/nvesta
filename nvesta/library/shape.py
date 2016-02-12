@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
+from copy import copy
+
 import bson
-import six
 
 from nvesta.systemwide import mongo
 
@@ -206,7 +207,7 @@ class RefBookMeta(object):
                     mongo.db['refbooks.%s' % prev_code].rename('refbooks.%s' % self.code)
             mongo.db['refbooks'].update_one(
                 {'_id': self.id},
-                {key: {'$set': value} for key, value in six.iteritems(self.to_db_record())},
+                {'$set': self.to_db_record()},
                 True
             )
         else:
@@ -269,11 +270,12 @@ class RefBook(object):
         :param rb_record:
         :return:
         """
-        data = rb_record.data
-        if data.get('_id'):
+        data = copy(rb_record.data)
+        _id = data.pop('_id', None)
+        if _id:
             self.collection.update_one(
-                {'_id': data['_id']},
-                data,
+                {'_id': _id},
+                {'$set': data},
                 True
             )
         else:
