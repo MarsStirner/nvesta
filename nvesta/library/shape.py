@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import bson
+import six
 
 from nvesta.systemwide import mongo
 
@@ -205,7 +206,7 @@ class RefBookMeta(object):
                     mongo.db['refbooks.%s' % prev_code].rename('refbooks.%s' % self.code)
             mongo.db['refbooks'].update_one(
                 {'_id': self.id},
-                {'$set': self.to_db_record()},
+                {key: {'$set': value} for key, value in six.iteritems(self.to_db_record())},
                 True
             )
         else:
