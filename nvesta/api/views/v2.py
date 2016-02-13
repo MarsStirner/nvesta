@@ -108,8 +108,7 @@ def rb_record_put_id(rb_code, field, rec_id):
 @api_method
 def rb_record_post(rb_code):
     rb = RefBookRegistry.get(rb_code)
-    record = rb.record_factory()
-    record.update(flask.request.get_json())
+    record = rb.record_factory.new_record(flask.request.get_json())
     rb.save(record)
     return record
 

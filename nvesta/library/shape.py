@@ -40,13 +40,35 @@ class Undefined(object):
     pass
 
 
+class RefBookRecordMeta(object):
+    beg_version = 0
+    end_version = None
+
+    @classmethod
+    def from_data(cls, data):
+        obj = cls()
+        if isinstance(data, dict):
+            obj.beg_version = data.get('beg_version', 0)
+            obj.end_version = data.get('end_version', None)
+        return obj
+
+    def as_record(self):
+        return {
+            'beg_version': self.beg_version,
+            'end_version': self.end_version,
+        }
+
+
 class RefBookRecord(object):
     """
     :type meta: RefBookMeta
     """
     meta = None
+    own_meta = None
+    id = None
 
     def __init__(self, record=None):
+        self.own_meta = RefBookRecordMeta()
         self.data = {}
         if record:
             self.update(record)
@@ -58,11 +80,13 @@ class RefBookRecord(object):
             self.data[key] = value
         _id = record.get('_id')
         if isinstance(_id, bson.ObjectId):
-            self.data['_id'] = _id
+            self.id = _id
         elif isinstance(_id, basestring):
-            self.data['_id'] = bson.ObjectId(_id)
+            self.id = bson.ObjectId(_id)
         else:
-            self.data.pop('_id', None)
+            self.id = None
+        if '_meta' in record:
+            self.own_meta = RefBookRecordMeta.from_data(record['_meta'])
 
     @classmethod
     def for_meta(cls, rb_meta):
@@ -86,7 +110,7 @@ class RefBookRecord(object):
             return self.data.get(item, default)
         return default
 
-    def __json__(self):
+    def as_dict(self):
         result = {}
         for description in self.meta.fields:
             key = description['key']
@@ -102,7 +126,30 @@ class RefBookRecord(object):
                     result[add_key] = ref_book.find({rb_field: value})
                 else:
                     result[add_key] = ref_book.find_one({rb_field: value})
-        result['_id'] = str(self.data.get('_id'))
+        result['_meta'] = self.own_meta.as_record()
+        return result
+
+    @classmethod
+    def new_record(cls, source=None):
+        obj = cls()
+        obj.own_meta = RefBookRecordMeta()
+        obj.own_meta.beg_version = cls.meta.version
+        if source:
+            obj.update(source)
+        return obj
+
+    def mark_delete_record(self):
+        self.own_meta.end_version = self.meta.version
+
+    def as_record(self, with_id=False):
+        result = self.as_dict()
+        if self.id and with_id:
+            result['_id'] = self.id
+        return result
+
+    def __json__(self):
+        result = self.as_dict()
+        result['_id'] = str(self.id) if self.id else None
         return result
 
 
@@ -270,11 +317,10 @@ class RefBook(object):
         :param rb_record:
         :return:
         """
-        data = copy(rb_record.data)
-        _id = data.pop('_id', None)
-        if _id:
+        data = rb_record.as_record()
+        if rb_record.id:
             self.collection.update_one(
-                {'_id': _id},
+                {'_id': rb_record.id},
                 {'$set': data},
                 True
             )
