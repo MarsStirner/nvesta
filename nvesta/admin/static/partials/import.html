@@ -1,0 +1,50 @@
+<div class="container-fluid">
+    <div class="row" ng-if="list === null">
+        <div class="col-md-12">
+            Идёт загрузка данных...
+        </div>
+    </div>
+    <table class="table" ng-if="list !== null">
+        <thead>
+        <tr>
+            <th>Код</th>
+            <th>Наименование</th>
+            <th class="text-nowrap">Их версия</th>
+            <th class="text-nowrap">Наша версия</th>
+            <th>&nbsp;</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr ng-repeat="record in list" ng-class="{
+            'bg-danger': record.their.version != record.our.version,
+            'bg-success': record.their.version == record.our.version
+        }">
+            <td ng-bind="record.their.code"></td>
+            <td ng-bind="record.their.name"></td>
+            <td class="text-nowrap" ng-bind="record.their.version"></td>
+            <td class="text-nowrap" ng-bind="(record.our)?(record.our.version || '?'):'Нет'"></td>
+            <td class="text-nowrap">
+                <button class="btn"
+                        ng-click="nsi_import(record.their)"
+                        ng-disabled="!!code"
+                        ng-class="{'btn-default': code != record.their.code, 'btn-danger': code == record.their.code}"
+                ><i class="fa fa-refresh" ng-class="{'fa-spin': code == record.their.code}"></i> Обновить</button>
+                <button class="btn"
+                        ng-if="record.their.code == 'KLD172'"
+                        ng-click="nsi_import(record.their)"
+                        ng-disabled="!!code"
+                        ng-class="{'btn-default': code != record.their.code, 'btn-danger': code == record.their.code}"
+                ><i class="fa fa-wrench" ng-class="{'fa-spin': code == record.their.code}"></i></button>
+            </td>
+        </tr>
+        <tr>
+            <td colspan="5" class="text-right">
+                <button class="btn bgn-default"
+                        ng-click="nsi_import_all()"
+                        ng-disabled="!!code"
+                ><i class="fa fa-refresh"></i> Обновить все</button>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</div>

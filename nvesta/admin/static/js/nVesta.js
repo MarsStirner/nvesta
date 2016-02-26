@@ -22,6 +22,10 @@ angular.module('nVesta', ['ngRoute', 'hitsl.core'])
             templateUrl: '/admin/static/partials/edit-data.html',
             controller: 'EditRbDataController'
         })
+        .when('/import', {
+            templateUrl: '/admin/static/partials/import.html',
+            controller: 'ImportController'
+        })
         .otherwise({
             redirectTo: '/'
         });
@@ -44,9 +48,29 @@ angular.module('nVesta', ['ngRoute', 'hitsl.core'])
                 view: '/api/v2/rb/{0}/data/{1}/'
             },
             fix: '/api/v2/rb/{0}/fix/'
+        },
+        imp: {
+            nsi: {
+                list: '/api/integrations/nsi/list/',
+                import: '/api/integrations/nsi/import/',
+                utils: {
+                    kladr: '/api/integrations/nsi/utils/kladr/'
+                }
+            }
         }
     }
 })
+.service('IntegrationsApi', ['ApiCalls', 'Config', function (ApiCalls, Config) {
+    this.nsi_list = function () {
+        return ApiCalls.wrapper('GET', Config.api.imp.nsi.list);
+    };
+    this.nsi_import = function (data) {
+        return ApiCalls.wrapper('POST', Config.api.imp.nsi.import, undefined, data);
+    };
+    this.nsi_update_kladr = function () {
+        return ApiCalls.wrapper('POST', Config.api.imp.nsi.utils.kladr);
+    }
+}])
 .service('RefBookApi', ['ApiCalls', 'Config', function (ApiCalls, Config) {
     this.rb_list = function () {
         return ApiCalls.wrapper('GET', Config.api.rb.list)
@@ -270,4 +294,57 @@ angular.module('nVesta', ['ngRoute', 'hitsl.core'])
         }
     }
 }])
+.controller('ImportController', [
+    '$scope', '$routeParams', 'IntegrationsApi', 'NotificationService',
+    function ($scope, $routeParams, IntegrationsApi, NotificationService) {
+        $scope.code = null;
+        $scope.list = null;
+
+        var update = function () {
+            $scope.code = true;
+            return IntegrationsApi.nsi_list().then(function (result) {
+                $scope.list = result;
+                $scope.code = null;
+                return result;
+            });
+        };
+        update();
+
+        var nsi_import = function (data) {
+            $scope.code = data.code;
+            return IntegrationsApi.nsi_import(data).then(
+                function (result) {
+                    $scope.code = null;
+                    NotificationService.notify(200, 'Загрузка справочникa {0} ({1}) из НСИ завершена'.format(data.name, data.code));
+                    return result;
+                },
+                function (result) {
+                    $scope.code = null;
+                    return result;
+                }
+            )
+        };
+
+        $scope.nsi_import = function (data) {
+            nsi_import(data).then(update, update);
+        };
+
+        $scope.nsi_import_all = function () {
+            var required = _.filter($scope.list, function (item) {
+                return _.safe_traverse(item, ['our', 'version']) != item.their.version && ! ['KLD172', 'STR172'].has(item.their.code);
+            });
+            function import_next() {
+                var data = required.shift();
+                if (data) {
+                    nsi_import(data.their).then(import_next)
+                } else {
+                    update().then(function () {
+                        NotificationService.notify(200, 'Загрузка всех справочников завершена', 'success');
+                    });
+                }
+            }
+            import_next();
+        };
+    }
+])
 ;

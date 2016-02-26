@@ -54,13 +54,16 @@ class RefBookRecord(object):
     def update(self, record):
         for description in self.meta.fields:
             key = description['key']
-            value = record.get(key)
-            self.data[key] = value
-        _id = record.get('_id')
+            value = record.get(key, Undefined)
+            if value is not Undefined:
+                self.data[key] = value
+        _id = record.get('_id', Undefined)
         if isinstance(_id, bson.ObjectId):
             self.data['_id'] = _id
         elif isinstance(_id, basestring):
             self.data['_id'] = bson.ObjectId(_id)
+        elif _id is Undefined:
+            pass
         else:
             self.data.pop('_id', None)
 
@@ -271,8 +274,8 @@ class RefBook(object):
         :return:
         """
         data = copy(rb_record.data)
-        _id = data.pop('_id', None)
-        if _id:
+        _id = data.pop('_id', Undefined)
+        if _id is not Undefined:
             self.collection.update_one(
                 {'_id': _id},
                 {'$set': data},
@@ -310,7 +313,7 @@ class RefBookRegistry(object):
         if code not in cls.ref_books:
             raw_meta = mongo.db['refbooks'].find_one({'code': code})
             if not raw_meta:
-                raise Exception
+                raise KeyError(code)
             meta = RefBookMeta.from_db_record(raw_meta)
             return cls.refbook_from_meta(meta)
         return cls.ref_books[code]
@@ -319,7 +322,7 @@ class RefBookRegistry(object):
     def create(cls, raw_meta):
         existing = mongo.db['refbooks'].find_one({'code': raw_meta['code']})
         if existing:
-            raise Exception
+            raise ValueError(raw_meta['code'])
         raw_meta.pop('_id', None)
         meta = RefBookMeta.from_db_record(raw_meta)
         meta.id = mongo.db['refbooks'].insert(meta.to_db_record())

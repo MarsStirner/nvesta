@@ -10,7 +10,7 @@ div.alert.notification-alert {
 }
 
 div.abs-alert {
-    position: absolute;
+    position: fixed;
 
     top: 30px;
     margin: 0 auto;
