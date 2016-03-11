@@ -6,7 +6,7 @@ from nvesta.systemwide import app
 from nvesta.usagicompat import VestaUsagiClient
 
 
-usagi = VestaUsagiClient(app, os.getenv('TSUKINO_USAGI_URL', 'http://127.0.0.1:5900'), 'vesta')
+usagi = VestaUsagiClient(app.wsgi_app, os.getenv('TSUKINO_USAGI_URL', 'http://127.0.0.1:5900'), 'vesta')
 app.wsgi_app = usagi.app
 usagi()
 
