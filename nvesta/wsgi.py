@@ -1,23 +1,14 @@
+import os
+
 import flask
 
-from nvesta.library import shape
-from nvesta.systemwide import app, mongo, fanstatic, cache
-from nvesta.admin.app import module as admin_module
-from nvesta.api.app import module as api_module
+from nvesta.systemwide import app
+from nvesta.usagicompat import VestaUsagiClient
 
-import config
 
-app.config.from_object(config)
-
-mongo.init_app(app)
-fanstatic.init_app(app)
-cache.init_app(app)
-
-with app.app_context():
-    shape.RefBookRegistry.bootstrap()
-
-app.register_blueprint(admin_module, url_prefix='/admin')
-app.register_blueprint(api_module,   url_prefix='/api')
+usagi = VestaUsagiClient(app, os.getenv('TSUKINO_USAGI_URL', 'http://127.0.0.1:5900'), 'vesta')
+app.wsgi_app = usagi.app
+usagi()
 
 
 @app.route('/')
