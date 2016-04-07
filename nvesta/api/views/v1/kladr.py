@@ -15,8 +15,8 @@ STREET_CODE = 'STR172'
 @module.route('/kladr/city/search/<value>/', methods=['GET'])
 @module.route('/kladr/city/search/<value>/<int:limit>/', methods=['GET'])
 @crossdomain('*', methods=['GET'])
-@cache.memoize(86400)
 @v1_api_method
+@cache.memoize(86400)
 def search_city(value, limit=None):
     rb = RefBookRegistry.get(CITY_CODE)
     find = {
@@ -34,8 +34,8 @@ def search_city(value, limit=None):
 @module.route('/kladr/psg/search/<value>/', methods=['GET'])
 @module.route('/kladr/psg/search/<value>/<int:limit>/', methods=['GET'])
 @crossdomain('*', methods=['GET'])
-@cache.memoize(86400)
 @v1_api_method
+@cache.memoize(86400)
 def search_city_country(value, limit=None):
     rb = RefBookRegistry.get(CITY_CODE)
     find = {
@@ -54,8 +54,8 @@ def search_city_country(value, limit=None):
 @module.route('/kladr/street/search/<city_code>/<value>/', methods=['GET'])
 @module.route('/kladr/street/search/<city_code>/<value>/<int:limit>/', methods=['GET'])
 @crossdomain('*', methods=['GET'])
-@cache.memoize(86400)
 @v1_api_method
+@cache.memoize(86400)
 def search_street(city_code, value=None, limit=None):
     rb = RefBookRegistry.get(STREET_CODE)
     find = {
@@ -78,8 +78,8 @@ def search_street(city_code, value=None, limit=None):
 
 @module.route('/kladr/city/<code>/', methods=['GET'])
 @crossdomain('*', methods=['GET'])
-@cache.memoize(86400)
 @v1_api_method
+@cache.memoize(86400)
 def get_city(code):
     rb = RefBookRegistry.get(CITY_CODE)
     find = {'identcode': code}
@@ -90,8 +90,8 @@ def get_city(code):
 
 @module.route('/kladr/street/<code>/', methods=['GET'])
 @crossdomain('*', methods=['GET'])
-@cache.memoize(86400)
 @v1_api_method
+@cache.memoize(86400)
 def get_street(code):
     rb = RefBookRegistry.get(STREET_CODE)
     find = {'identcode': code}

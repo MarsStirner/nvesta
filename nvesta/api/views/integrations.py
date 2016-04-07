@@ -11,8 +11,8 @@ __author__ = 'viruzzz-kun'
 
 
 @module.route('/integrations/nsi/list/', methods=['GET'])
-@cache.memoize(3600)
 @api_method
+@cache.memoize(3600)
 def integrations_nsi_list():
     return list_nsi_dictionaries()
 
