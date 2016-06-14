@@ -70,9 +70,15 @@ def list_nsi_dictionaries():
 
     result = client.getRefbookList() or []
     final = []
-    if isinstance(result, list):
-        raise ApiException(500, u'Ошибка доступа к НСИ: %s' % result[0].children[0][0]['value'])
     for nsi_dict_raw in result:
+        if nsi_dict_raw['key'] == 'errors':
+            raise ApiException(
+                500,
+                u'Ошибка доступа к НСИ:\n%s' % (u'\n'.join(
+                    u'%s: %s' % (item['key'], item['value'])
+                    for item in nsi_dict_raw.children[0]
+                ))
+            )
         nsi_dict = prepare_dictionary(nsi_dict_raw)
         code = nsi_dict['code']
         try:
