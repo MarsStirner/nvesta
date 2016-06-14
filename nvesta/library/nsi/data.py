@@ -16,6 +16,10 @@ handler.setLevel(logging.DEBUG)
 logger.addHandler(handler)
 # logging.getLogger('suds.bindings.multiref').addHandler(logging.StreamHandler())
 
+stream_logger = logging.getLogger()
+stream_logger.addHandler(handler)
+
+
 def format_key(_key):
     _key = _key.lower()
     prefixes = ['s_', 'n_', 'v_']
@@ -34,14 +38,17 @@ def prepare_dictionary(data):
 
 class LogMsg(object):
     def __init__(self, tags=None):
+        stream_logger.debug('Entering logging context %s.' % ('with tags %s' % ', '.join(set(tags) if tags else 'without tags')))
         self.tags = set(tags) if tags is not None else set()
         self._level = logging.DEBUG
         self._list = []
 
     def log(self, message):
+        stream_logger.info(message)
         self._list.append(message)
 
     def error(self, message):
+        stream_logger.error(message)
         self._list.append(message)
         self._level = logging.ERROR
 
