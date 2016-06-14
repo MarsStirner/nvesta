@@ -5,8 +5,9 @@ from datetime import datetime
 
 import itertools
 
+from hitsl_utils.api import ApiException
 from nvesta.library.shape import RefBookRegistry
-from nvesta.systemwide import app
+from nvesta.systemwide import app, cache
 from .client import NsiClient
 
 logger = logging.getLogger('simple')
@@ -60,6 +61,7 @@ def log_context(tags=None):
     lm.finish()
 
 
+@cache.memoize(3600)
 def list_nsi_dictionaries():
     client = NsiClient(
         url=app.config.get('NSI_SOAP'),
@@ -68,6 +70,8 @@ def list_nsi_dictionaries():
 
     result = client.getRefbookList() or []
     final = []
+    if isinstance(result, list):
+        raise ApiException(500, u'Ошибка доступа к НСИ: %s' % result[0].children[0][0]['value'])
     for nsi_dict_raw in result:
         nsi_dict = prepare_dictionary(nsi_dict_raw)
         code = nsi_dict['code']
@@ -76,13 +80,15 @@ def list_nsi_dictionaries():
             nsi_dict['version'] = prepare_dictionary(client.getVersionList(code)[-1])['version']
         except (IndexError, ValueError):
             continue
+        meta = None
         try:
             rb = RefBookRegistry.get(code)
+            meta = rb.meta
         except KeyError:
-            rb = None
+            pass
         final.append({
             'their': nsi_dict,
-            'our': rb.meta,
+            'our': meta,
         })
     return final
 
