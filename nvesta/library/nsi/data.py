@@ -3,8 +3,6 @@ import contextlib
 import logging
 from datetime import datetime
 
-import itertools
-
 from hitsl_utils.api import ApiException
 from nvesta.library.shape import RefBookRegistry
 from nvesta.systemwide import app, cache
@@ -145,38 +143,10 @@ def import_nsi_dict(nsi_dict):
 
         my_version = rb.meta.version
         their_version = latest_version['version']
-        documents = []
-        if not my_version:
-            log.log(u'Локальный справочник не имеет версии, создаётся')
-            parts_number = client.get_parts_number(code, their_version)
-            log.log(u'Ответ получен. Всего частей: %s' % parts_number)
-            documents = []
-            for i in xrange(parts_number or 0):
-                log.log(u'Запрашиваем часть %s / %s' % (i + 1, parts_number))
-                request_result = client.get_parts_data(code, their_version, i + 1)
-                log.log(u'Ответ получен. Разбираем...')
-                documents.extend(
-                    prepare_dictionary(document)
-                    for document in request_result if document
-                )
-            log.log(u'Разобрано')
-        elif my_version and my_version != their_version:
-            log.log(u'Локальная версия справочника: {0}'.format(my_version))
-            log.log(u'Актуальная версия справочника: {0}'.format(latest_version))
-            log.log(u'Версии не совпадают, обновляем diff...')
-            request_result = client.getRefbookUpdate(code=code, user_version=my_version)
-            log.log(u'Ответ получен. Разбираем...')
-            documents = [prepare_dictionary(item) for item in request_result if item]
-            log.log(u'Разобрано')
-        else:
-            log.log(u'Локальная версия справочника: {0}'.format(my_version))
-            log.log(u'Актуальная версия справочника: {0}'.format(latest_version))
-            log.log(u'Версии совпадают, не обновляем справочник')
-            return
 
-        if documents:
-            # Есть, что обновлять
+        def dump_documents(docs):
             log.log(u'Начинаем обновление данных...')
+            documents = map(prepare_dictionary, docs)
             log.log(u'Новых/изменённых записей: %s' % len(documents))
             # Сперва меняем (при необходимости) структуру справочника
             names = set()
@@ -188,9 +158,9 @@ def import_nsi_dict(nsi_dict):
             if new_names:
                 # Новые столбцы появились, надо добавить
                 log.log(u'Структура справочника изменилась. Решейпим...')
-                for name in new_names:
+                for key in new_names:
                     rb.meta.fields.append({
-                        'key': name,
+                        'key': key,
                         'type': 'string',
                         'mandatory': False,
                         'unique': False,
@@ -198,11 +168,9 @@ def import_nsi_dict(nsi_dict):
                     })
                 rb.meta.reshape()
 
-            log.log(u'Убеждаемся, что все индексы на месте...')
             key_names = (key for key in ('code', 'id', 'recid', 'oid') if key in all_names)
-            for name in key_names:
-                log.log(u'...%s' % name)
-                rb.collection.create_index(name, sparse=True)
+            for key in key_names:
+                rb.collection.create_index(key, sparse=True)
 
             log.log(u'Добавляем/обновляем записи...')
             documents_to_save = []
@@ -217,10 +185,35 @@ def import_nsi_dict(nsi_dict):
                 documents_to_save.append(existing)
             log.log(u'Сбрасываем записи в БД...')
             rb.save_bulk(documents_to_save)
-            rb.meta.version = their_version
-            rb.meta.reshape()
-            log.log(u'Справочник ({0}) обновлён'.format(code))
-            cache.delete_memoized(list_nsi_dictionaries)
+
+        if not my_version:
+            log.log(u'Локальный справочник не имеет версии, создаётся')
+            parts_number = client.get_parts_number(code, their_version)
+            log.log(u'Ответ получен. Всего частей: %s' % parts_number)
+            for i in xrange(parts_number or 0):
+                log.log(u'Запрашиваем часть %s / %s' % (i + 1, parts_number))
+                request_result = client.get_parts_data(code, their_version, i + 1)
+                log.log(u'Ответ получен. Разбираем...')
+                dump_documents(doc for doc in request_result if doc)
+            log.log(u'Разобрано')
+        elif my_version and my_version != their_version:
+            log.log(u'Локальная версия справочника: {0}'.format(my_version))
+            log.log(u'Актуальная версия справочника: {0}'.format(latest_version))
+            log.log(u'Версии не совпадают, обновляем diff...')
+            request_result = client.getRefbookUpdate(code=code, user_version=my_version)
+            log.log(u'Ответ получен. Разбираем...')
+            dump_documents(doc for doc in request_result if doc)
+            log.log(u'Разобрано')
+        else:
+            log.log(u'Локальная версия справочника: {0}'.format(my_version))
+            log.log(u'Актуальная версия справочника: {0}'.format(latest_version))
+            log.log(u'Версии совпадают, не обновляем справочник')
+            return
+
+    rb.meta.version = their_version
+    rb.meta.reshape()
+    log.log(u'Справочник ({0}) обновлён'.format(code))
+    cache.delete_memoized(list_nsi_dictionaries)
 
 
 def create_indexes(collection_indexes):
