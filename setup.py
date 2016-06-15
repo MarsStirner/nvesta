@@ -46,6 +46,7 @@ setup(
         'js.ui_bootstrap',
         'js.underscore',
         'hitsl_utils',
+        'zeep',
     ],
     classifiers=[
         'Environment :: Web Environment',
