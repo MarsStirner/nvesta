@@ -285,6 +285,28 @@ class RefBook(object):
             self.collection.insert_one(data)
         return rb_record
 
+    def save_bulk(self, rb_records):
+        from pymongo import InsertOne, UpdateOne, WriteConcern
+
+        def make_request(data):
+            _id = data.pop('_id', Undefined)
+            if _id is Undefined:
+                return InsertOne(data)
+            else:
+                return UpdateOne(
+                    {'_id': _id},
+                    {'$set': data},
+                    True
+                )
+        requests = [make_request(copy(rb_record.data)) for rb_record in rb_records]
+        self.collection.bulk_write(requests)
+
+    def ensure_default_indexes(self):
+        all_names = set(field['key'] for field in self.meta.fields)
+        key_names = (key for key in ('code', 'id', 'recid', 'oid') if key in all_names)
+        for name in key_names:
+            self.collection.create_index(name, sparse=True)
+
     def get_primary_linked_rb(self):
         if self.meta.primary_link.right_rb_code:
             return RefBookRegistry.get(self.meta.primary_link.right_rb_code)
@@ -343,6 +365,8 @@ class RefBookRegistry(object):
         collection_names = mongo.db.collection_names(False)
         if 'refbooks' not in collection_names:
             mongo.db.create_collection('refbooks')
+        for rb in cls.list():
+            rb.ensure_default_indexes()
 
     @classmethod
     def invalidate(cls, code=None):

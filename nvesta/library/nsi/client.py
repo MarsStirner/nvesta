@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
-from suds.client import Client
-from suds import WebFault
+from zeep import Client
+from zeep.exceptions import Fault as WebFault
 
 from . import exc
 
@@ -12,7 +12,7 @@ class NsiClient(object):
     """Класс SOAP-клиента для взаимодействия со сервисом НСИ"""
     def __init__(self, url, user_key):
         self.user_key = user_key
-        self.client = Client(url, cache=None)
+        self.client = Client(url)
 
     def __get_error(self, result):
         # TODO: отрефакторить и вынести в NSIResult.get_errors, соответственно создать класс-обертку для результатов

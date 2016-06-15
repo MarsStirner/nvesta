@@ -11,13 +11,16 @@ from nvesta.systemwide import app, cache
 from .client import NsiClient
 
 logger = logging.getLogger('simple')
+logger.setLevel(logging.DEBUG)
 handler = logging.StreamHandler()
 handler.setLevel(logging.DEBUG)
 logger.addHandler(handler)
-# logging.getLogger('suds.bindings.multiref').addHandler(logging.StreamHandler())
 
-stream_logger = logging.getLogger()
+stream_logger = logging.getLogger('NsiImportStreamLogger')
+stream_logger.setLevel(logging.DEBUG)
 stream_logger.addHandler(handler)
+stream_formatter = logging.Formatter('%(asctime)s - %(message)s')
+handler.setFormatter(stream_formatter)
 
 
 def format_key(_key):
@@ -78,11 +81,11 @@ def list_nsi_dictionaries():
     result = client.getRefbookList() or []
     final = []
     for nsi_dict_raw in result:
-        if nsi_dict_raw['key'] == 'errors':
+        if nsi_dict_raw.key == 'errors':
             raise ApiException(
                 500,
                 u'Ошибка доступа к НСИ:\n%s' % (u'\n'.join(
-                    u'%s: %s' % (item['key'], item['value'])
+                    u'%s: %s' % (item.key, item.value)
                     for item in nsi_dict_raw.children[0]
                 ))
             )
@@ -145,33 +148,46 @@ def import_nsi_dict(nsi_dict):
         documents = []
         if not my_version:
             log.log(u'Локальный справочник не имеет версии, создаётся')
-            documents = [
-                prepare_dictionary(document)
-                for i in xrange(client.get_parts_number(code, their_version) or 0)
-                for document in itertools.ifilter(None, client.get_parts_data(code, their_version, i + 1))
-                ]
+            parts_number = client.get_parts_number(code, their_version)
+            log.log(u'Ответ получен. Всего частей: %s' % parts_number)
+            documents = []
+            for i in xrange(parts_number or 0):
+                log.log(u'Запрашиваем часть %s / %s' % (i + 1, parts_number))
+                request_result = client.get_parts_data(code, their_version, i + 1)
+                log.log(u'Ответ получен. Разбираем...')
+                documents.extend(
+                    prepare_dictionary(document)
+                    for document in request_result if document
+                )
+            log.log(u'Разобрано')
         elif my_version and my_version != their_version:
             log.log(u'Локальная версия справочника: {0}'.format(my_version))
             log.log(u'Актуальная версия справочника: {0}'.format(latest_version))
-            log.log(u'Версии не совпадают, обновляем diff')
-            documents = [
-                prepare_dictionary(document)
-                for document in itertools.ifilter(None, client.getRefbookUpdate(code=code, user_version=my_version))
-                ]
+            log.log(u'Версии не совпадают, обновляем diff...')
+            request_result = client.getRefbookUpdate(code=code, user_version=my_version)
+            log.log(u'Ответ получен. Разбираем...')
+            documents = [prepare_dictionary(item) for item in request_result if item]
+            log.log(u'Разобрано')
         else:
             log.log(u'Локальная версия справочника: {0}'.format(my_version))
             log.log(u'Актуальная версия справочника: {0}'.format(latest_version))
             log.log(u'Версии совпадают, не обновляем справочник')
+            return
 
         if documents:
             # Есть, что обновлять
+            log.log(u'Начинаем обновление данных...')
+            log.log(u'Новых/изменённых записей: %s' % len(documents))
             # Сперва меняем (при необходимости) структуру справочника
             names = set()
             for doc in documents:
                 names.update(set(doc.iterkeys()))
-            new_names = names - set(field['key'] for field in rb.meta.fields)
+            own_names = set(field['key'] for field in rb.meta.fields)
+            new_names = names - own_names
+            all_names = names | own_names
             if new_names:
                 # Новые столбцы появились, надо добавить
+                log.log(u'Структура справочника изменилась. Решейпим...')
                 for name in new_names:
                     rb.meta.fields.append({
                         'key': name,
@@ -182,19 +198,29 @@ def import_nsi_dict(nsi_dict):
                     })
                 rb.meta.reshape()
 
+            log.log(u'Убеждаемся, что все индексы на месте...')
+            key_names = (key for key in ('code', 'id', 'recid', 'oid') if key in all_names)
+            for name in key_names:
+                log.log(u'...%s' % name)
+                rb.collection.create_index(name, sparse=True)
+
+            log.log(u'Добавляем/обновляем записи...')
+            documents_to_save = []
             for doc in documents:
                 existing = None
-                for key in ['code', 'id', 'recid', 'oid']:
+                for key in key_names:
                     if key in doc:
                         existing = rb.find_one({key: doc[key]})
                 if not existing:
                     existing = rb.record_factory()
                 existing.update(doc)
-                # existing['code'] = doc.get('code', doc['id'])
-                rb.save(existing)
+                documents_to_save.append(existing)
+            log.log(u'Сбрасываем записи в БД...')
+            rb.save_bulk(documents_to_save)
             rb.meta.version = their_version
             rb.meta.reshape()
             log.log(u'Справочник ({0}) обновлён'.format(code))
+            cache.delete_memoized(list_nsi_dictionaries)
 
 
 def create_indexes(collection_indexes):
