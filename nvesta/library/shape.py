@@ -3,8 +3,6 @@ from copy import copy
 
 import bson
 
-from nvesta.systemwide import mongo
-
 __author__ = 'viruzzz-kun'
 
 
@@ -203,18 +201,18 @@ class RefBookMeta(object):
 
     def reshape(self):
         if self.id:
-            existing = mongo.db['refbooks'].find_one({'_id': self.id})
+            existing = RefBookRegistry.db['refbooks'].find_one({'_id': self.id})
             if existing:
                 prev_code = existing['code']
                 if prev_code != self.code:
-                    mongo.db['refbooks.%s' % prev_code].rename('refbooks.%s' % self.code)
-            mongo.db['refbooks'].update_one(
+                    RefBookRegistry.db['refbooks.%s' % prev_code].rename('refbooks.%s' % self.code)
+            RefBookRegistry.db['refbooks'].update_one(
                 {'_id': self.id},
                 {'$set': self.to_db_record()},
                 True
             )
         else:
-            mongo.db['refbooks'].insert(
+            RefBookRegistry.db['refbooks'].insert(
                 self.to_db_record(),
             )
 
@@ -314,12 +312,13 @@ class RefBook(object):
 
 class RefBookRegistry(object):
     ref_books = {}
+    db = None
 
     @classmethod
     def refbook_from_meta(cls, meta):
         refbook = RefBook()
         refbook.meta = meta
-        refbook.collection = mongo.db['refbook.%s' % meta.code]
+        refbook.collection = cls.db['refbook.%s' % meta.code]
         refbook.record_factory = RefBookRecord.for_meta(meta)
         cls.ref_books[meta.code] = refbook
 
@@ -333,7 +332,7 @@ class RefBookRegistry(object):
         :rtype: RefBook
         """
         if code not in cls.ref_books:
-            raw_meta = mongo.db['refbooks'].find_one({'code': code})
+            raw_meta = cls.db['refbooks'].find_one({'code': code})
             if not raw_meta:
                 raise KeyError(code)
             meta = RefBookMeta.from_db_record(raw_meta)
@@ -342,29 +341,30 @@ class RefBookRegistry(object):
 
     @classmethod
     def create(cls, raw_meta):
-        existing = mongo.db['refbooks'].find_one({'code': raw_meta['code']})
+        existing = cls.db['refbooks'].find_one({'code': raw_meta['code']})
         if existing:
             raise ValueError(raw_meta['code'])
         raw_meta.pop('_id', None)
         meta = RefBookMeta.from_db_record(raw_meta)
-        meta.id = mongo.db['refbooks'].insert(meta.to_db_record())
-        mongo.db.create_collection('refbook.%s' % meta.code)
+        meta.id = cls.db['refbooks'].insert(meta.to_db_record())
+        cls.db.create_collection('refbook.%s' % meta.code)
         meta.reshape()
         return cls.refbook_from_meta(meta)
 
     @classmethod
     def list(cls):
-        names = mongo.db['refbooks'].find()
+        names = cls.db['refbooks'].find()
         return [
             cls.get(description['code'])
             for description in names
         ]
 
     @classmethod
-    def bootstrap(cls):
-        collection_names = mongo.db.collection_names(False)
+    def bootstrap(cls, mongo_db):
+        cls.db = mongo_db
+        collection_names = cls.db.collection_names(False)
         if 'refbooks' not in collection_names:
-            mongo.db.create_collection('refbooks')
+            cls.db.create_collection('refbooks')
         for rb in cls.list():
             rb.ensure_default_indexes()
 
