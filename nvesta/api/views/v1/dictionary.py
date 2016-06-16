@@ -81,6 +81,7 @@ def dictionary_delete(rb_code, document_id):
 
 
 # TODO: По возможности отказаться от хвоста или хотя бы сменить ему имя
+@module.route('/v1/find/<code>/', methods=['POST'])
 @module.route('/find/<code>/', methods=['POST'])
 @crossdomain('*', methods=['POST'])
 @v1_api_method
