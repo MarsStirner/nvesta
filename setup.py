@@ -48,6 +48,12 @@ setup(
         'hitsl_utils',
         'zeep',
     ],
+    entry_points={
+        'console_scripts': {
+            'vesta-update-nsi=nvesta.cli:update_nsi_dicts',
+            'vesta-migrate-v1=nvesta.cli:migrate_from_v1',
+        }
+    },
     classifiers=[
         'Environment :: Web Environment',
         'Intended Audience :: Developers',

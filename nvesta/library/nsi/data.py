@@ -5,14 +5,11 @@ from datetime import datetime
 
 from hitsl_utils.api import ApiException
 from nvesta.library.shape import RefBookRegistry
-from nvesta.systemwide import app, cache
-from .client import NsiClient
 
 logger = logging.getLogger('simple')
 logger.setLevel(logging.DEBUG)
 handler = logging.StreamHandler()
 handler.setLevel(logging.DEBUG)
-logger.addHandler(handler)
 
 stream_logger = logging.getLogger('NsiImportStreamLogger')
 stream_logger.setLevel(logging.DEBUG)
@@ -69,14 +66,8 @@ def log_context(tags=None):
     lm.finish()
 
 
-@cache.memoize(3600)
-def list_nsi_dictionaries():
-    client = NsiClient(
-        url=app.config.get('NSI_SOAP'),
-        user_key=app.config.get('NSI_TOKEN'),
-    )
-
-    result = client.getRefbookList() or []
+def list_nsi_dictionaries(nsi_client):
+    result = nsi_client.getRefbookList() or []
     final = []
     for nsi_dict_raw in result:
         if nsi_dict_raw.key == 'errors':
@@ -91,7 +82,7 @@ def list_nsi_dictionaries():
         code = nsi_dict['code']
         try:
             # Пытаемся понять, какая версия справочника нынче актуальна
-            nsi_dict['version'] = prepare_dictionary(client.getVersionList(code)[-1])['version']
+            nsi_dict['version'] = prepare_dictionary(nsi_client.getVersionList(code)[-1])['version']
         except (IndexError, ValueError):
             continue
         meta = None
@@ -107,11 +98,7 @@ def list_nsi_dictionaries():
     return final
 
 
-def import_nsi_dict(nsi_dict):
-    client = NsiClient(
-        url=app.config.get('NSI_SOAP'),
-        user_key=app.config.get('NSI_TOKEN'),
-    )
+def import_nsi_dict(nsi_dict, nsi_client):
     code = nsi_dict['code']
     name = nsi_dict['name']
 
@@ -121,7 +108,7 @@ def import_nsi_dict(nsi_dict):
 
         try:
             # Пытаемся понять, какая версия справочника нынче актуальна
-            latest_version = prepare_dictionary(client.getVersionList(code)[-1])
+            latest_version = prepare_dictionary(nsi_client.getVersionList(code)[-1])
             latest_version['date'] = datetime.strptime(latest_version['date'], '%d.%m.%Y')
         except (IndexError, ValueError), e:
             # Не получилось. С позором ретируемся.
@@ -188,11 +175,11 @@ def import_nsi_dict(nsi_dict):
 
         if not my_version:
             log.log(u'Локальный справочник не имеет версии, создаётся')
-            parts_number = client.get_parts_number(code, their_version)
+            parts_number = nsi_client.get_parts_number(code, their_version)
             log.log(u'Ответ получен. Всего частей: %s' % parts_number)
             for i in xrange(parts_number or 0):
                 log.log(u'Запрашиваем часть %s / %s' % (i + 1, parts_number))
-                request_result = client.get_parts_data(code, their_version, i + 1)
+                request_result = nsi_client.get_parts_data(code, their_version, i + 1)
                 log.log(u'Ответ получен. Разбираем...')
                 dump_documents(doc for doc in request_result if doc)
             log.log(u'Разобрано')
@@ -200,7 +187,7 @@ def import_nsi_dict(nsi_dict):
             log.log(u'Локальная версия справочника: {0}'.format(my_version))
             log.log(u'Актуальная версия справочника: {0}'.format(latest_version))
             log.log(u'Версии не совпадают, обновляем diff...')
-            request_result = client.getRefbookUpdate(code=code, user_version=my_version)
+            request_result = nsi_client.getRefbookUpdate(code=code, user_version=my_version)
             log.log(u'Ответ получен. Разбираем...')
             dump_documents(doc for doc in request_result if doc)
             log.log(u'Разобрано')
@@ -213,7 +200,6 @@ def import_nsi_dict(nsi_dict):
     rb.meta.version = their_version
     rb.meta.reshape()
     log.log(u'Справочник ({0}) обновлён'.format(code))
-    cache.delete_memoized(list_nsi_dictionaries)
 
 
 def create_indexes(collection_indexes):
