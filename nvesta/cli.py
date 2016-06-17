@@ -60,7 +60,7 @@ def update_nsi_dicts():
         for code, name, our, their, nsi_dict in to_update:
             print('%s %s %s->%s' % (code, name, our, their))
             print 'Updating (%s) %s...' % (code, name)
-            nsi_dict['their']['version'] = their
+            nsi_dict['version'] = their
             import_nsi_dict(nsi_dict, client)
         if not to_update:
             print ('Nothing to update')
