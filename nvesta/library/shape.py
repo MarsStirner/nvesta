@@ -352,6 +352,10 @@ class RefBookRegistry(object):
         return cls.refbook_from_meta(meta)
 
     @classmethod
+    def names(cls):
+        return [description['code'] for description in cls.db['refbooks'].find()]
+
+    @classmethod
     def list(cls):
         names = cls.db['refbooks'].find()
         return [

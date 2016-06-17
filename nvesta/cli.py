@@ -106,6 +106,7 @@ def migrate_from_v1():
     RefBookRegistry.bootstrap(mongo[args.db])
 
     processed_dicts = {'dict_names'}
+    processed_dicts.update(set(RefBookRegistry.names()))
 
     for v_description in db_vesta['dict_names'].find():
         code = v_description.get('code')
