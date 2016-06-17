@@ -41,12 +41,7 @@ def update_nsi_dicts():
     listed = list_nsi_dictionaries(client)
 
     cooked = [
-        (their['code'],
-         their['name'],
-         safe_traverse(our, 'version', default='?'),
-         safe_traverse(their, 'version', 'version', 0),
-         their
-         )
+        (their['code'], their['name'], safe_traverse(our, 'version', default='?'), their.get('version', 0), their)
         for our, their in (
             (safe_dict(desc['our']), safe_dict(desc['their']))
             for desc in listed
@@ -65,6 +60,7 @@ def update_nsi_dicts():
         for code, name, our, their, nsi_dict in to_update:
             print('%s %s %s->%s' % (code, name, our, their))
             print 'Updating (%s) %s...' % (code, name)
+            nsi_dict['their']['version'] = their
             import_nsi_dict(nsi_dict, client)
         if not to_update:
             print ('Nothing to update')
