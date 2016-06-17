@@ -141,6 +141,8 @@ def migrate_from_v1():
         for block in blocks(v_collection.find()):
             rb.save_bulk(rb.record_factory(raw) for raw in block)
 
+        processed_dicts.add(code)
+
     for code in db_vesta.collection_names(False):
         if code in processed_dicts:
             continue
