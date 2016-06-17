@@ -185,7 +185,7 @@ def import_nsi_dict(nsi_dict, nsi_client):
             log.log(u'Разобрано')
         elif my_version and my_version != their_version:
             log.log(u'Локальная версия справочника: {0}'.format(my_version))
-            log.log(u'Актуальная версия справочника: {0}'.format(latest_version))
+            log.log(u'Актуальная версия справочника: {0}'.format(their_version))
             log.log(u'Версии не совпадают, обновляем diff...')
             request_result = nsi_client.getRefbookUpdate(code=code, user_version=my_version)
             log.log(u'Ответ получен. Разбираем...')
@@ -193,7 +193,7 @@ def import_nsi_dict(nsi_dict, nsi_client):
             log.log(u'Разобрано')
         else:
             log.log(u'Локальная версия справочника: {0}'.format(my_version))
-            log.log(u'Актуальная версия справочника: {0}'.format(latest_version))
+            log.log(u'Актуальная версия справочника: {0}'.format(their_version))
             log.log(u'Версии совпадают, не обновляем справочник')
             return
 
