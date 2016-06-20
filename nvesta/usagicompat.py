@@ -18,7 +18,7 @@ class VestaUsagiClient(TsukinoUsagiClient):
         cache.init_app(app)
 
         with app.app_context():
-            shape.RefBookRegistry.bootstrap()
+            shape.RefBookRegistry.bootstrap(mongo.db)
 
         app.register_blueprint(admin_module, url_prefix='/admin')
         app.register_blueprint(api_module,   url_prefix='/api')

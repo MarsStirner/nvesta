@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-import flask
+from flask import current_app, request
+from nvesta.library.nsi.client import NsiClient
 from pymongo import TEXT, ASCENDING
 
 from hitsl_utils.api import api_method
@@ -13,14 +14,22 @@ __author__ = 'viruzzz-kun'
 @module.route('/integrations/nsi/list/', methods=['GET'])
 @api_method
 def integrations_nsi_list():
-    return list_nsi_dictionaries()
+    client = NsiClient(
+        url=current_app.config.get('NSI_SOAP'),
+        user_key=current_app.config.get('NSI_TOKEN'),
+    )
+    return list_nsi_dictionaries(client)
 
 
 @module.route('/integrations/nsi/import/', methods=['POST'])
 @api_method
 def integrations_nsi_import():
-    nsi_dict = flask.request.get_json()
-    result = import_nsi_dict(nsi_dict)
+    client = NsiClient(
+        url=current_app.config.get('NSI_SOAP'),
+        user_key=current_app.config.get('NSI_TOKEN'),
+    )
+    nsi_dict = request.get_json()
+    result = import_nsi_dict(nsi_dict, client)
     cache.delete_memoized(integrations_nsi_list)
     return result
 
