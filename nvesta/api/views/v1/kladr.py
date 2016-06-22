@@ -2,6 +2,7 @@
 import flask
 
 from hitsl_utils.api import crossdomain
+from hitsl_utils.safe import safe_dict, safe_int
 from nvesta.api.app import module
 from nvesta.api.views.v1.apiutils import v1_jsonify, v1_api_method
 from nvesta.library.shape import RefBookRegistry
@@ -99,25 +100,33 @@ def get_street(code):
     return list(result)
 
 
-def _set_cities_parents(cities):
+def _safe_city(city):
+    return dict(
+        safe_dict(city),
+        level=safe_int(city['level']),
+        status=safe_int(city['status'])
+    )
+
+
+def _get_parents(city):
     rb = RefBookRegistry.get(CITY_CODE)
     result = []
-    for city in cities:
-        city['parents'] = []
-        identparent = city['identparent']
-        parent = city.get('parent')
 
-        if identparent or parent:
-            level = int(city['level'])
-            for i in xrange(level - 1, 0, -1):
-                if parent:
-                    parent_city = rb.find_one({'_id': parent})
-                elif identparent:
-                    parent_city = rb.find_one({'identcode': identparent})
-                else:
-                    break
-                city['parents'].append(parent_city)
-                parent = parent_city['parent']
-                identparent = parent_city['identparent']
-        result.append(city)
+    def _get_parent(c, f=False):
+        if c['identparent']:
+            _get_parent(rb.find_one({'identcode': c['identparent']}))
+        if not f:
+            result.append(_safe_city(c))
+
+    _get_parent(city, True)
     return result
+
+
+def _set_cities_parents(cities):
+    return [
+        dict(
+            _safe_city(city),
+            parents=_get_parents(city),
+        )
+        for city in cities
+    ]
