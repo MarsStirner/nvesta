@@ -87,6 +87,10 @@ class RefBookRecord(object):
             return self.data.get(item, default)
         return default
 
+    @property
+    def id(self):
+        return self.data.get('_id')
+
     def __json__(self):
         result = {}
         for description in self.meta.fields:
@@ -195,7 +199,7 @@ class RefBookMeta(object):
 
     def __contains__(self, item):
         for i in self.fields:
-            if i.get('code') == item:
+            if i.get('key') == item:
                 return True
         return False
 

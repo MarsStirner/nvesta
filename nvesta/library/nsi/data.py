@@ -222,6 +222,16 @@ def kladr_maintenance():
         log.log(u'   identparent')
         rb.collection.create_index([('identcode', ASCENDING)])
 
+        if 'parent' not in rb.meta:
+            rb.meta.fields.append({
+                'key': 'parent',
+                'type': 'string',
+                'mandatory': False,
+                'unique': False,
+                'link': None,
+            })
+            rb.meta.reshape()
+
         limit = 5000
         for i in xrange(0, 300):
             log.log(u'Блок № %s' % (i+1))
@@ -237,7 +247,7 @@ def kladr_maintenance():
                     {'identcode': document['identparent']}
                 )
                 document.update({
-                    'parent': parent['_id'] if parent else None
+                    'parent': parent.id if parent else None
                 })
             log.log(u'Сохранение %s - %s' % (i * limit, i * limit + len(documents)))
             rb.save_bulk(documents)
