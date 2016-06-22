@@ -66,6 +66,25 @@ def update_nsi_dicts():
             print ('Nothing to update')
 
 
+def kladr_maintenance():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--host', default=None)
+    parser.add_argument('--port', default=None)
+    parser.add_argument('--db', default=nvesta_db)
+
+    args = parser.parse_args(sys.argv[1:])
+
+    mongo = pymongo.MongoClient(
+        host=args.host,
+        port=args.port,
+    )
+
+    RefBookRegistry.bootstrap(mongo[args.db])
+
+    from nvesta.library.nsi.data import kladr_maintenance
+    kladr_maintenance()
+
+
 def migrate_from_v1():
     def blocks(iterable, max_size=2000):
         result = []

@@ -3,6 +3,8 @@ import contextlib
 import logging
 from datetime import datetime
 
+from pymongo import TEXT, ASCENDING
+
 from hitsl_utils.api import ApiException
 from nvesta.library.shape import RefBookRegistry
 
@@ -202,25 +204,40 @@ def import_nsi_dict(nsi_dict, nsi_client):
     log.log(u'Справочник ({0}) обновлён'.format(code))
 
 
-def create_indexes(collection_indexes):
-    if not isinstance(collection_indexes, dict):
-        return None
-    for code, indexes in collection_indexes.items():
-        rb = RefBookRegistry.get(code)
-        if not isinstance(indexes, list):
-            indexes = [indexes]
-        for index in indexes:
-            for field, index_type in index.items():
-                rb.collection.ensure_index(field, index_type)
+def kladr_maintenance():
+    with log_context(['kladr', 'maintenance']) as log:
+        log.log(u'Проверяем индексы на справочнике STR172 (улицы)')
+        rb = RefBookRegistry.get('STR172')
+        log.log(u'   name - TEXT')
+        rb.collection.create_index([('name', TEXT)])
+        log.log(u'   identcode')
+        rb.collection.create_index([('identcode', ASCENDING)])
+        log.log(u'   identparent')
+        rb.collection.create_index([('identparent', ASCENDING)])
 
+        log.log(u'Проверяем индексы на справочнике KLD172 (регионы)')
+        rb = RefBookRegistry.get('KLD172')
+        log.log(u'   name - TEXT + level')
+        rb.collection.create_index([('name', TEXT), ('level', ASCENDING)])
+        log.log(u'   identparent')
+        rb.collection.create_index([('identcode', ASCENDING)])
 
-def kladr_set_parents():
-    rb = RefBookRegistry.get('KLD172')
-    limit = 1000
-    for i in xrange(0, 300):
-        documents = rb.find({'identparent': {'$ne': None}}, limit=limit, skip=i*limit)
-        if not documents:
-            break
-        for document in documents:
-            parent = rb.find_one({'identcode': document['identparent']})
-            rb.collection.update_one({'_id': document.id}, {'parent': {'$set': parent['_id'] if parent else None}})
+        limit = 5000
+        for i in xrange(0, 300):
+            log.log(u'Блок № %s' % (i+1))
+            documents = rb.find(
+                {'identparent': {'$ne': None}},
+                limit=limit,
+                skip=i*limit
+            )
+            if not documents:
+                break
+            for document in documents:
+                parent = rb.find_one(
+                    {'identcode': document['identparent']}
+                )
+                document.update({
+                    'parent': parent['_id'] if parent else None
+                })
+            log.log(u'Сохранение %s - %s' % (i * limit, i * limit + len(documents)))
+            rb.save_bulk(documents)
