@@ -3,7 +3,7 @@ import contextlib
 import logging
 from datetime import datetime
 
-from pymongo import TEXT, ASCENDING
+from pymongo import ASCENDING
 
 from hitsl_utils.api import ApiException
 from nvesta.library.shape import RefBookRegistry
@@ -208,8 +208,8 @@ def kladr_maintenance():
     with log_context(['kladr', 'maintenance']) as log:
         log.log(u'Проверяем индексы на справочнике STR172 (улицы)')
         rb = RefBookRegistry.get('STR172')
-        log.log(u'   name - TEXT')
-        rb.collection.create_index([('name', TEXT)])
+        log.log(u'   name')
+        rb.collection.create_index([('name', ASCENDING)])
         log.log(u'   identcode')
         rb.collection.create_index([('identcode', ASCENDING)])
         log.log(u'   identparent')
@@ -217,8 +217,8 @@ def kladr_maintenance():
 
         log.log(u'Проверяем индексы на справочнике KLD172 (регионы)')
         rb = RefBookRegistry.get('KLD172')
-        log.log(u'   name - TEXT + level')
-        rb.collection.create_index([('name', TEXT), ('level', ASCENDING)])
+        log.log(u'   name + level')
+        rb.collection.create_index([('name', ASCENDING), ('level', ASCENDING)])
         log.log(u'   identparent')
         rb.collection.create_index([('identcode', ASCENDING)])
 
