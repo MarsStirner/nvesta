@@ -76,8 +76,9 @@ def rb_records_get(rb_code):
     """
     skip = flask.request.args.get('skip') or None
     limit = flask.request.args.get('limit') or 100
+    version = flask.request.args.get('version') or None
     rb = RefBookRegistry.get(rb_code)
-    return rb.find({}, 'code', limit=limit, skip=skip)
+    return rb.find({}, 'code', limit=limit, skip=skip, version=version)
 
 
 @module.route('/v2/rb/<rb_code>/data/<field>/<rec_id>/', methods=['GET'])
@@ -100,7 +101,7 @@ def rb_record_put_id(rb_code, field, rec_id):
     rb = RefBookRegistry.get(rb_code)
     record = rb.find_one(field, rec_id)
     record.update(flask.request.get_json())
-    rb.save(record)
+    record.save()
     return record
 
 
@@ -110,6 +111,6 @@ def rb_record_post(rb_code):
     rb = RefBookRegistry.get(rb_code)
     record = rb.record_factory()
     record.update(flask.request.get_json())
-    rb.save(record)
+    record.save()
     return record
 

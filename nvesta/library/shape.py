@@ -1,9 +1,15 @@
 # -*- coding: utf-8 -*-
+import logging
 from copy import copy
 
 import bson
+import datetime
+import six
 
 __author__ = 'viruzzz-kun'
+
+
+logger = logging.getLogger(__name__)
 
 
 # __meta = {
@@ -38,72 +44,229 @@ class Undefined(object):
     pass
 
 
-class RefBookRecord(object):
-    """
-    :type meta: RefBookMeta
-    """
-    meta = None
+class MongoObject(object):
+    _default_values = {}
 
     def __init__(self, record=None):
+        """
+        @type record: dict|NoneType
+        @param record:
+        """
         self.data = {}
-        if record:
-            self.update(record)
+        if record is not None:
+            self.set_record(record)
+
+    def _copy_fields(self):
+        return getattr(self, '__slots__', [])
+
+    def _default_value(self, field):
+        return self._default_values.get(field)
+
+    def __getattr__(self, item):
+        data = object.__getattribute__(self, 'data')
+        flds = object.__getattribute__(self, '_copy_fields')()
+        if item in flds:
+            return data.get(item)
+        return object.__getattribute__(self, item)
+
+    def __setattr__(self, key, value):
+        flds = object.__getattribute__(self, '_copy_fields')()
+        data = object.__getattribute__(self, 'data')
+        if key in flds:
+            data[key] = value
+        object.__setattr__(self, key, value)
+
+    def set_record(self, record):
+        """
+        @type record: dict
+        @param record:
+        @return:
+        """
+        self.data.clear()
+        self.data.update({
+            key: record.get(key, self._default_value(key))
+            for key in self._copy_fields()
+            if key in record
+        })
+        return self
 
     def update(self, record):
-        for description in self.meta.fields:
-            key = description['key']
+        """
+        @type record: dict
+        @param record:
+        @return:
+        """
+        self.data.update({
+            key: record[key]
+            for key in self._copy_fields()
+            if key in record and record[key] is not Undefined
+        })
+        return self
+
+    def as_record(self):
+        """
+        @rtype: dict
+        @return:
+        """
+        return {
+            key: self.data.get(key)
+            for key in self._copy_fields()
+        }
+
+    def __json__(self):
+        """
+        @rtype: dict
+        @return:
+        """
+        return self.as_record()
+
+
+class RefBookRecordMeta(MongoObject):
+    __slots__ = ['beg_version', 'end_version', 'delete', 'draft', 'edit']
+
+    @classmethod
+    def from_rb_meta(cls, rb_meta):
+        result = cls()
+        result.beg_version = rb_meta.version
+        result.draft = True
+        return result
+
+
+class RefBookRecordControllerDescriptor(object):
+    pass
+
+
+class RefBookRecordController(object):
+    def __init__(self, rb, record):
+        self.rb = rb
+        self.record = record
+
+
+class RefBookRecord(object):
+    """
+    :type rb: RefBook
+    """
+    __slots__ = ['data', 'rb', 'meta']
+    rb = None
+    ctrl = RefBookRecordControllerDescriptor()
+
+    def __init__(self, record=None):
+        self.meta = RefBookRecordMeta()
+        self.data = {}
+        if record:
+            self.set_record(record)
+
+    def set_record(self, record):
+        self.data.clear()
+        for description in self.rb.meta.fields:
+            key = description.key
             value = record.get(key, Undefined)
             if value is not Undefined:
                 self.data[key] = value
+            else:
+                self.data[key] = None
+
         _id = record.get('_id', Undefined)
         if isinstance(_id, bson.ObjectId):
             self.data['_id'] = _id
         elif isinstance(_id, basestring):
             self.data['_id'] = bson.ObjectId(_id)
-        elif _id is Undefined:
-            pass
-        else:
+        elif _id is not Undefined:
             self.data.pop('_id', None)
 
+        _meta = record.get('_meta', Undefined)
+        if not (_meta is Undefined or _meta is None):
+            self.meta = RefBookRecordMeta(_meta)
+        elif not self.meta:
+            self.meta = RefBookRecordMeta.from_rb_meta(self.rb.meta)  # TODO: set default from RefBookMeta
+        self.data['_meta'] = self.meta.as_record()
+
+    def update(self, data, weak=True):
+        record = self
+        if not self.meta.draft:
+            if not self.meta.edit:
+                record = self.__class__()
+                record.update(self.data, False)
+                self.meta.edit = record
+            else:
+                record = self.meta.edit
+
+        skipped = set()
+        for description in self.rb.meta.fields:
+            key = description.key
+            value = data.get(key, Undefined)
+            if value is not Undefined:
+                record.data[key] = value
+            else:
+                skipped.add(key)
+        if not weak:
+            for key in skipped:
+                record.data[key] = None
+
+    def save(self):
+        self.rb.save(self)
+        return self
+
+    def delete(self):
+        self.meta.delete = True
+        return self
+
+    def reset(self):
+        if self.meta.end_version is not None:
+            logger.warning(u'Resetting fixed record for some reason: _id = %s', self.data.get('_id', 'UNSAVED'))
+            return
+        if self.meta.edit:
+            self.meta.edit = None
+
+        if self.meta.delete:
+            self.meta.delete = False
+
+        if self.meta.draft:
+            self.rb.delete_record(self)
+
     @classmethod
-    def for_meta(cls, rb_meta):
+    def for_refbook(cls, refbook):
         class RefBookRecordF(RefBookRecord):
-            meta = rb_meta
+            rb = refbook
         return RefBookRecordF
 
     def __contains__(self, item):
-        return item in self.meta
+        return item in self.rb.meta
 
     def __getitem__(self, item):
-        if item in self.meta:
+        if item in self.rb.meta:
             return self.data.get(item)
 
     def __setitem__(self, key, value):
-        if key in self.meta:
+        if key in self.rb.meta:
             self.data[key] = value
 
+    def __iter__(self):
+        return iter(self.data)
+
     def get(self, item, default=None):
-        if item in self.meta:
+        if item in self.rb.meta:
             return self.data.get(item, default)
         return default
 
     def __json__(self):
         result = {}
-        for description in self.meta.fields:
-            key = description['key']
+        for description in self.rb.meta.fields:
+            key = description.key
             value = self.data.get(key)
             result[key] = value
-            if description.get('link'):
-                add_key = description['link']['key']
-                rb_code = description['link']['code']
-                rb_field = description['link']['linked_field']
-                as_list = description['link'].get('list')
+            if description.link:
+                add_key = description.link['key']
+                rb_code = description.link['code']
+                rb_field = description.link['linked_field']
+                as_list = description.link.get('list')
                 ref_book = RefBookRegistry.get(rb_code)
                 if as_list:
                     result[add_key] = ref_book.find({rb_field: value})
                 else:
                     result[add_key] = ref_book.find_one({rb_field: value})
         result['_id'] = str(self.data.get('_id'))
+        result['_meta'] = self.meta
         return result
 
 
@@ -137,6 +300,65 @@ class PrimaryLinkMeta(object):
         return self.get_rb_record()
 
 
+class RefBookVersionMeta(object):
+    __slots__ = ['version', 'fix_datetime']
+
+    def __init__(self, record=None):
+        self.version = None
+        self.fix_datetime = None
+
+        if record is not None:
+            self.update(record)
+
+    def update(self, record):
+        self.version = record.get('version')
+        self.fix_datetime = record.get('fix_datetime')
+
+    def as_record(self):
+        return {
+            'version': self.version,
+            'fix_datetime': self.fix_datetime,
+        }
+
+    __json__ = as_record
+
+
+class FieldMeta(object):
+    __slots__ = ['key', 'type', 'mandatory', 'unique', 'link']
+
+    def __init__(self, record=None, **kwargs):
+        self.key = None
+        self.type = None
+        self.mandatory = False
+        self.unique = False
+        self.link = None
+        if record is not None:
+            self.update(record)
+        for k, v in six.iteritems(kwargs):
+            if k in self.__slots__:
+                setattr(self, k, v)
+
+    def update(self, record):
+        if not record:
+            record = {}
+        self.key = record.get('key')
+        self.type = record.get('type') or 'string'
+        self.mandatory = record.get('mandatory', False)
+        self.unique = record.get('unique', False)
+        self.link = record.get('link')
+
+    def as_record(self):
+        return {
+            'key': self.key,
+            'type': self.type,
+            'mandatory': self.mandatory,
+            'unique': self.unique,
+            'link': self.link,
+        }
+
+    __json__ = as_record
+
+
 class RefBookMeta(object):
     id = None
     oid = None
@@ -144,10 +366,12 @@ class RefBookMeta(object):
     name = None
     description = None
     version = 0
+    versions = None
     fields = None
     primary_link = None
 
     def __init__(self, record=None):
+        self.fields = []
         if record is not None:
             self.update(record)
 
@@ -155,6 +379,7 @@ class RefBookMeta(object):
     def from_db_record(cls, record):
         meta = RefBookMeta()
         meta.update(record)
+        meta.versions = map(RefBookVersionMeta, record.get('versions', []))
         return meta
 
     def update(self, record):
@@ -170,32 +395,34 @@ class RefBookMeta(object):
         self.version = record.get('version')
         self.oid = record.get('oid')
         self.primary_link = PrimaryLinkMeta(self, record.get('primary_link'))
-        self.fields = [
-            {
-                'key': field.get('key'),
-                'type': field.get('type') or 'string',
-                'mandatory': field.get('mandatory'),
-                'unique': field.get('unique'),
-                'link': field.get('link'),
-            }
-            for field in record.get('fields', [])
-        ]
+        self.fields = map(FieldMeta, record.get('fields', []))
 
     def to_db_record(self):
+        self.__check_integrity()
         result = {
             'code': self.code,
             'name': self.name,
             'description': self.description,
             'version': self.version,
+            'versions': [version.as_record for version in self.versions],
             'oid': self.oid,
             'primary_link': self.primary_link.get_rb_record(),
-            'fields': self.fields
+            'fields': [f.as_record() for f in self.fields]
         }
         return result
 
+    def __check_integrity(self):
+        if not self.versions:
+            self.versions = [
+                RefBookVersionMeta({
+                    'version': self.version,
+                    'fix_datetime': datetime.datetime.utcnow(),
+                })
+            ]
+
     def __contains__(self, item):
         for i in self.fields:
-            if i.get('code') == item:
+            if i.key == item:
                 return True
         return False
 
@@ -217,12 +444,14 @@ class RefBookMeta(object):
             )
 
     def __json__(self):
+        self.__check_integrity()
         result = {
             'code': self.code,
             'name': self.name,
             'description': self.description,
             'fields': self.fields,
             'version': self.version,
+            'versions': self.versions,
             'oid': self.oid,
             'primary_link': self.primary_link,
             '_id': str(self.id) if isinstance(self.id, bson.ObjectId) else self.id
@@ -239,7 +468,7 @@ class RefBook(object):
     collection = None
     record_factory = None
 
-    def find(self, kwargs, sort=None, limit=None, skip=None):
+    def find(self, kwargs, sort=None, limit=None, skip=None, version=None):
         cursor = self.collection.find(kwargs)
         if limit:
             cursor = cursor.limit(limit)
@@ -300,7 +529,7 @@ class RefBook(object):
         self.collection.bulk_write(requests)
 
     def ensure_default_indexes(self):
-        all_names = set(field['key'] for field in self.meta.fields)
+        all_names = set(field.key for field in self.meta.fields)
         key_names = (key for key in ('code', 'id', 'recid', 'oid') if key in all_names)
         for name in key_names:
             self.collection.create_index(name, sparse=True)
@@ -319,7 +548,7 @@ class RefBookRegistry(object):
         refbook = RefBook()
         refbook.meta = meta
         refbook.collection = cls.db['refbook.%s' % meta.code]
-        refbook.record_factory = RefBookRecord.for_meta(meta)
+        refbook.record_factory = RefBookRecord.for_refbook(refbook)
         cls.ref_books[meta.code] = refbook
 
         return refbook
