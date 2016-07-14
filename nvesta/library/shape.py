@@ -52,7 +52,7 @@ class MongoObject(object):
         @type record: dict|NoneType
         @param record:
         """
-        self.data = {}
+        object.__setattr__(self, 'data', {})
         if record is not None:
             self.set_record(record)
 
