@@ -77,7 +77,7 @@ def list_nsi_dictionaries(nsi_client):
                 500,
                 u'Ошибка доступа к НСИ:\n%s' % (u'\n'.join(
                     u'%s: %s' % (item.key, item.value)
-                    for item in nsi_dict_raw.children[0]
+                    for item in nsi_dict_raw.children.item
                 ))
             )
         nsi_dict = prepare_dictionary(nsi_dict_raw)
