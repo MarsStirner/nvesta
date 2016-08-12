@@ -5,7 +5,7 @@ from flask import request
 from hitsl_utils.api import ApiException
 from nvesta.api.app import module
 from nvesta.api.views.v1.apiutils import core_api_method
-from nvesta.library.shape import RefBookRegistry
+from nvesta.library.rb.registry import RefBookRegistry
 from nvesta.library.utils import force_json, prepare_find_params
 
 nsi_name_keys = ('name', 'name_short', 'descr', 'res_descr', 'mkb_name')
@@ -13,7 +13,7 @@ nsi_name_keys = ('name', 'name_short', 'descr', 'res_descr', 'mkb_name')
 
 def _prepare_hs_response(data, dict_code):
     """
-    :type data: nvesta.library.shape.RefBookRecord
+    :type data: nvesta.library.rbrecord.RefBookRecord
     :param data:
     :param dict_code:
     :return:

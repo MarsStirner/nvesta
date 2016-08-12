@@ -4,10 +4,11 @@ import argparse
 import sys
 
 import pymongo
+
 from hitsl_utils.safe import safe_traverse, safe_dict
 from nvesta.library.nsi.client import NsiClient
 from nvesta.library.nsi.data import list_nsi_dictionaries, import_nsi_dict
-from nvesta.library.shape import RefBookRegistry
+from nvesta.library.rb.registry import RefBookRegistry
 
 __author__ = 'viruzzz-kun'
 

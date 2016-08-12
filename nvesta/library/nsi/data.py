@@ -4,7 +4,8 @@ import logging
 from datetime import datetime
 
 from hitsl_utils.api import ApiException
-from nvesta.library.shape import RefBookRegistry, FieldMeta
+from nvesta.library.rb.rbmeta import FieldMeta
+from nvesta.library.rb.registry import RefBookRegistry
 
 logger = logging.getLogger('simple')
 logger.setLevel(logging.DEBUG)
@@ -191,8 +192,7 @@ def import_nsi_dict(nsi_dict, nsi_client):
             log.log(u'Версии совпадают, не обновляем справочник')
             return
 
-    rb.meta.version = their_version
-    rb.meta.reshape()
+    rb.fixate(their_version)
     log.log(u'Справочник ({0}) обновлён'.format(code))
 
 

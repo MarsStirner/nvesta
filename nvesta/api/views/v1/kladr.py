@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
-import flask
 
 from hitsl_utils.api import crossdomain
 from nvesta.api.app import module
-from nvesta.api.views.v1.apiutils import v1_jsonify, v1_api_method
-from nvesta.library.shape import RefBookRegistry
+from nvesta.api.views.v1.apiutils import v1_api_method
+from nvesta.library.rb.registry import RefBookRegistry
 from nvesta.library.utils import prepare_find_params
 from nvesta.systemwide import cache
 
@@ -116,6 +115,8 @@ def _set_cities_parents(cities):
                     parent_city = rb.find_one({'identcode': identparent})
                 else:
                     break
+                if not city.get('parents'):
+                    city['parents'] = []
                 city['parents'].append(parent_city)
                 parent = parent_city['parent']
                 identparent = parent_city['identparent']
