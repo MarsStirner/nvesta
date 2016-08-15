@@ -1,7 +1,6 @@
 Flask
 Flask-Fanstatic
 Flask-PyMongo
-Flask-Cache
 Requests
 zeep
 js.bootstrap

@@ -10,5 +10,3 @@ __author__ = 'viruzzz-kun'
 app = Flask(__name__)
 mongo = PyMongo()
 fanstatic = Fanstatic()
-cache = Cache()
-beaker = BeakerSession()

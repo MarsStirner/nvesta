@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import logging
 
+import pymongo.database
+
 from nvesta.library.rb.rb import RefBook
 from nvesta.library.rb.rbmeta import RefBookMeta
 from nvesta.library.rb.rbrecord import RefBookRecordMeta, RefBookRecord
@@ -131,11 +133,34 @@ class RefBookRegistry(object):
         @return:
         """
         cls.db = mongo_db
+        run = True
+        try:
+            import uwsgi
+            run = uwsgi.worker_id() == 0
+        except ImportError:
+            pass
+
+        if run:
+            cls.bootstrap_refbooks()
+            try:
+                cls.db.create_collection('vesta.meta')
+            except pymongo.database.CollectionInvalid:
+                return
+            else:
+                collection = cls.db['vesta.meta']
+                collection.update_one(
+                    {'version': '0.2'},
+                    {'version': '0.2'},
+                    True
+                )
+
+    @classmethod
+    def bootstrap_refbooks(cls):
         collection_names = cls.db.collection_names(False)
         if 'refbooks' not in collection_names:
             cls.db.create_collection('refbooks')
         for rb in cls.list():
-            print('Bootstrapping %s ...' % (rb.meta.code,))
+            logger.info('Bootstrapping %s ...', rb.meta.code)
             rb.ensure_default_indexes()
             default_meta = RefBookRecordMeta.from_rb_meta(rb.meta).as_db_record()
             rb.collection.update_many(
