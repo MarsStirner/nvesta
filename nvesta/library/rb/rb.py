@@ -181,9 +181,20 @@ class RefBook(object):
             raise CannotFixate('New version already present in previous versions')
 
         from pymongo import InsertOne, UpdateOne, DeleteMany, UpdateMany
+        from nvesta.library.rb.rbrecord import RefBookRecordMeta
 
-        old_version = self.meta.version
+        old_version = self.meta.version or new_version
+
+        # noinspection PyListCreation
         requests = []
+
+        # Если справочник был неверсионным и у нас записи без меты, надо забить её умолчаниями.
+        requests.append(
+            UpdateMany(
+                {'_meta': None},
+                {'$set': {'_meta': RefBookRecordMeta.from_rb_meta(self.meta).as_db_record()}},
+            )
+        )
 
         # Новые удалённые - просто удаляем
         requests.append(
@@ -259,7 +270,7 @@ class RefBook(object):
         @return:
         """
         all_names = set(field.key for field in self.meta.fields)
-        key_names = (key for key in ('code', 'id', 'recid', 'oid') if key in all_names)
+        key_names = (key for key in ('identcode', 'code', 'id', 'recid', 'oid') if key in all_names)
         for name in key_names:
             self.collection.create_index(name, sparse=True)
 

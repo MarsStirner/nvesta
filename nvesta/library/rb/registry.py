@@ -142,17 +142,6 @@ class RefBookRegistry(object):
 
         if run:
             cls.bootstrap_refbooks()
-            try:
-                cls.db.create_collection('vesta.meta')
-            except pymongo.database.CollectionInvalid:
-                return
-            else:
-                collection = cls.db['vesta.meta']
-                collection.update_one(
-                    {'version': '0.2'},
-                    {'$set': {'version': '0.2'}},
-                    True
-                )
 
     @classmethod
     def bootstrap_refbooks(cls):
