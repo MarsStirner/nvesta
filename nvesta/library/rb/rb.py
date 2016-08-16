@@ -170,6 +170,17 @@ class RefBook(object):
         if rb_record._id:
             self.collection.delete_one({'_id': rb_record._id})
 
+    def _fix_meta(self, new_version):
+        from nvesta.library.rb.rbrecord import RefBookRecordMeta
+
+        record_meta = RefBookRecordMeta.from_rb_meta(self.meta)
+        record_meta.beg_version = record_meta.beg_version or new_version
+
+        self.collection.update_many(
+            {'_meta': None},
+            {'$set': {'_meta': record_meta.as_db_record()}},
+        )
+
     def fixate(self, new_version):
         """
         Фиксация изменений
@@ -180,8 +191,7 @@ class RefBook(object):
         if new_version in [v.version for v in self.meta.versions]:
             raise CannotFixate('New version already present in previous versions')
 
-        from pymongo import InsertOne, UpdateOne, DeleteMany, UpdateMany
-        from nvesta.library.rb.rbrecord import RefBookRecordMeta
+        from pymongo import InsertOne, UpdateOne, DeleteMany
 
         old_version = self.meta.version or new_version
 
@@ -189,12 +199,7 @@ class RefBook(object):
         requests = []
 
         # Если справочник был неверсионным и у нас записи без меты, надо забить её умолчаниями.
-        requests.append(
-            UpdateMany(
-                {'_meta': None},
-                {'$set': {'_meta': RefBookRecordMeta.from_rb_meta(self.meta).as_db_record()}},
-            )
-        )
+        self._fix_meta(new_version)
 
         # Новые удалённые - просто удаляем
         requests.append(

@@ -86,15 +86,18 @@ def autofix():
     RefBookRegistry.bootstrap(mongo[args.db])
 
     refbooks = RefBookRegistry.list()
-    to_fix = [
+    to_fix = set(
         rb for rb in refbooks if not rb.meta.version
-    ]
+    )
     if args.list:
         for rb in to_fix:
             print (u"%s -- %s" % (rb.code, rb.name))
     elif args.all:
-        for rb in to_fix:
-            rb.fixate(args.version)
+        for rb in refbooks:
+            if rb in to_fix:
+                rb.fixate(args.version)
+            else:
+                rb._fix_meta(args.version)
     else:
         parser.print_help()
 
