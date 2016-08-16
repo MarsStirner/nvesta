@@ -104,7 +104,7 @@ class RefBookMeta(object):
     code = None
     name = None
     description = None
-    version = '1'
+    version = None
     versions = None
     fields = None
     primary_link = None
@@ -152,10 +152,7 @@ class RefBookMeta(object):
         return result
 
     def __check_integrity(self):
-        if self.version is None:
-            self.version = '1'
-
-        if not self.versions:
+        if self.version and not self.versions:
             self.versions = [
                 RefBookVersionMeta({
                     'version': self.version,

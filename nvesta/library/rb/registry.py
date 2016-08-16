@@ -162,11 +162,6 @@ class RefBookRegistry(object):
         for rb in cls.list():
             logger.info('Bootstrapping %s ...', rb.meta.code)
             rb.ensure_default_indexes()
-            default_meta = RefBookRecordMeta.from_rb_meta(rb.meta).as_db_record()
-            rb.collection.update_many(
-                {'_meta': None},
-                {'$set': {'_meta': default_meta}},
-            )
 
     @classmethod
     def invalidate(cls, code=None):
