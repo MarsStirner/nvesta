@@ -136,7 +136,7 @@ class RefBookRegistry(object):
         run = True
         try:
             import uwsgi
-            run = uwsgi.worker_id() == 0
+            run = uwsgi.worker_id() == 1
         except ImportError:
             pass
 
@@ -150,7 +150,7 @@ class RefBookRegistry(object):
                 collection = cls.db['vesta.meta']
                 collection.update_one(
                     {'version': '0.2'},
-                    {'version': '0.2'},
+                    {'$set': {'version': '0.2'}},
                     True
                 )
 
