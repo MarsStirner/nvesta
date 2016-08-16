@@ -51,6 +51,7 @@ setup(
         'console_scripts': {
             'vesta-update-nsi=nvesta.cli:update_nsi_dicts',
             'vesta-migrate-v1=nvesta.cli:migrate_from_v1',
+            'vesta-autofix=nvesta.cli:autofix',
         }
     },
     classifiers=[
