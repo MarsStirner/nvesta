@@ -24,3 +24,25 @@ div.abs-alert {
 .pad10px {
     padding: 10px;
 }
+
+.marginal {
+    margin-bottom: 10px;
+}
+
+.form-control-cheated {
+    width: 250px !important;
+    display: inline-block !important;
+}
+
+.record-deleted {
+    text-decoration: line-through;
+    background: lightsalmon;
+}
+
+.record-new {
+    background: lightgreen;
+}
+
+.record-dirty {
+    background: lightblue;
+}

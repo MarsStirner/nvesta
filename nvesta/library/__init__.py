@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
-from . import shape, static
+from nvesta.library.rb import registry
+from . import static
 
 __author__ = 'viruzzz-kun'

@@ -1,6 +1,7 @@
 /**
  * Created by mmalkov on 29.01.16.
  */
+"use strict";
 
 angular.module('nVesta', ['ngRoute', 'hitsl.core'])
 .config(['$routeProvider', '$locationProvider', function ($routeProvider, $locationProvider) {
@@ -22,6 +23,10 @@ angular.module('nVesta', ['ngRoute', 'hitsl.core'])
             templateUrl: '/admin/static/partials/edit-data.html',
             controller: 'EditRbDataController'
         })
+        .when('/edit/:rb_code/fixate', {
+            templateUrl: '/admin/static/partials/edit-fixate.html',
+            controller: 'EditRbFixateController'
+        })
         .when('/import', {
             templateUrl: '/admin/static/partials/import.html',
             controller: 'ImportController'
@@ -42,10 +47,11 @@ angular.module('nVesta', ['ngRoute', 'hitsl.core'])
             },
             data: {
                 list: '/api/v2/rb/{0}/data/',
+                diff: '/api/v2/rb/{0}/diff/',
                 create: '/api/v2/rb/{0}/data/',
-                update: '/api/v2/rb/{0}/data/id/{1}/',
-                remove: '/api/v2/rb/{0}/data/id/{1}/',
-                view: '/api/v2/rb/{0}/data/{1}/'
+                update: '/api/v2/rb/{0}/data/_id/{1}/',
+                remove: '/api/v2/rb/{0}/data/_id/{1}/',
+                view: '/api/v2/rb/{0}/data/_id/{1}/'
             },
             fix: '/api/v2/rb/{0}/fix/'
         },
@@ -84,8 +90,19 @@ angular.module('nVesta', ['ngRoute', 'hitsl.core'])
     this.rb_meta_edit = function (data, rb_code) {
         return ApiCalls.wrapper('PUT', Config.api.rb.meta.update.format(rb_code || data.code), undefined, data)
     };
-    this.rb_data_list = function (rb_code) {
-        return ApiCalls.wrapper('GET', Config.api.rb.data.list.format(rb_code))
+    this.rb_fixate = function (rb_code, version) {
+        return ApiCalls.wrapper('POST', Config.api.rb.fix.format(rb_code), {version: version})
+    };
+    this.rb_data_list = function (rb_code, edge, version) {
+        return ApiCalls.wrapper(
+            'GET', Config.api.rb.data.list.format(rb_code), {
+                edge: Boolean(edge) || undefined,
+                'with-meta': true,
+                version: version
+            })
+    };
+    this.rb_data_diff = function (rb_code) {
+        return ApiCalls.wrapper('GET', Config.api.rb.data.diff.format(rb_code))
     };
     this.rb_data_create = function (data, rb_code) {
         return ApiCalls.wrapper('POST', Config.api.rb.data.create.format(rb_code), undefined, data)
@@ -96,8 +113,13 @@ angular.module('nVesta', ['ngRoute', 'hitsl.core'])
     this.rb_data_remove = function (rb_code, record_id) {
         return ApiCalls.wrapper('DELETE', Config.api.rb.data.remove.format(rb_code, record_id))
     };
-    this.rb_data_view = function (rb_code, record_id) {
-        return ApiCalls.wrapper('GET', Config.api.rb.data.view.format(rb_code, record_id))
+    this.rb_data_view = function (rb_code, record_id, edge, version) {
+        return ApiCalls.wrapper(
+            'GET', Config.api.rb.data.view.format(rb_code, record_id), {
+                edge: Boolean(edge) || undefined,
+                'with-meta': true,
+                version: version
+            })
     };
 }])
 .service('RefBookRegistry', ['RefBookApi', 'RefBookApi', function (RefBookApi) {
@@ -238,31 +260,66 @@ angular.module('nVesta', ['ngRoute', 'hitsl.core'])
     };
 }])
 .controller('EditRbDataController', [
-    '$scope', '$routeParams', '$location', 'RefBookApi', 'NotificationService',
-    function ($scope, $routeParams, $location, RefBookApi, NotificationService) {
-    var meta = $scope.meta = {};
+    '$scope', '$routeParams', '$location', '$window', 'RefBookApi', 'NotificationService',
+    function ($scope, $routeParams, $location, $window, RefBookApi, NotificationService) {
+    $scope.meta = {};
     var rb_code = $scope.rb_code = $routeParams.rb_code;
     var data = $scope.data = [];
 
+    $scope.format_version = function (item) {
+        if (item === null) {
+            return '{0} (Текущая)'.format($scope.meta.version);
+        } else {
+            return '{0} ({1})'.format(
+                item.version,
+                moment(item.fix_datetime).format('YYYY-MM-DD HH:mm')
+            );
+        }
+    };
+
     RefBookApi.rb_meta_view(rb_code).then(function (rb_meta) {
         $scope.meta = rb_meta;
+        $scope.versions = [].concat(rb_meta.versions, [null]).reverse();
+        $scope.selected_version = null;
     });
 
-    RefBookApi.rb_data_list(rb_code).then(function (rb_data) {
-        _.replace_array(data, rb_data);
+    $scope.$watch('selected_version', function (n, o) {
+        if (!angular.equals(n, o)) {
+            load_data(n);
+        }
     });
+
+    function load_data(version) {
+        var deferred;
+        if (version === null) {
+            deferred = RefBookApi.rb_data_list(rb_code, true)
+        } else {
+            deferred = RefBookApi.rb_data_list(rb_code, false, version.version)
+        }
+        deferred.then(function (rb_data) {
+            _.replace_array(data, rb_data);
+        });
+    }
 
     $scope.addRow = function () {
         var new_record = {};
-        _.map(meta.fields, function (field) {
+        _.map($scope.meta.fields, function (field) {
             new_record[field.key] = '';
         });
-        data.push({
+        data.unshift({
             $edit: new_record
         });
     };
     $scope.editRecord = function (record) {
         record.$edit = angular.copy(record);
+    };
+    $scope.resetRecord = function (record) {
+        RefBookApi.rb_data_view(rb_code, record._id).then(function (result_1) {
+            RefBookApi.rb_data_update(result_1, rb_code, record._id).then(function (result_2) {
+                angular.extend(record, {_meta: {}}, result_2);
+                NotificationService.notify(200, 'Запись восстановлена', 'success', 10000)
+            })
+        })
     };
     $scope.cancelRecord = function (record) {
         record.$edit = undefined;
@@ -289,10 +346,59 @@ angular.module('nVesta', ['ngRoute', 'hitsl.core'])
         if (!record._id) {
             _.replace_array(data, _.without(data, record))
         } else {
-            console.log('Не имплементировано пока');
-            // RefBookApi.rb_data_remove(rb_code, record._id).then(function (result) {})
+            if ($window.confirm('Действительно удалить запись?')) {
+                RefBookApi.rb_data_remove(rb_code, record._id).then(function (result) {
+                    if (!result._id) {
+                        _.remove_item(data, record)
+                    } else {
+                        angular.extend(record, result);
+                        record.$edit = undefined
+                    }
+                    NotificationService.notify(200, 'Запись удалена', 'danger', 10000);
+                })
+            }
         }
+    };
+}])
+.controller('EditRbFixateController', [
+    '$scope', '$routeParams', '$location', '$window', 'RefBookApi', 'NotificationService',
+    function ($scope, $routeParams, $location, $window, RefBookApi, NotificationService) {
+    var rb_code = $scope.rb_code = $routeParams.rb_code;
+    var data = $scope.data = [];
+    $scope.version = null;
+
+    function init() {
+        RefBookApi.rb_meta_view(rb_code).then(function (rb_meta) {
+            $scope.meta = rb_meta;
+            $scope.version = rb_meta.version;
+        });
+
+        RefBookApi.rb_data_diff(rb_code).then(function (rb_data) {
+            _.replace_array(data, rb_data);
+        });
     }
+
+    $scope.resetRecord = function (record) {
+        var index = _.findIndex(data, {_id: record._id});
+        if (record._meta.draft) {
+            RefBookApi.rb_data_remove(rb_code, record._id).then(function (result) {
+                data.splice(index, 1);
+            })
+        } else {
+            RefBookApi.rb_data_view(rb_code, record._id).then(function (result_1) {
+                RefBookApi.rb_data_update(result_1, rb_code, record._id).then(function () {
+                    data.splice(index, 1);
+                })
+            })
+        }
+    };
+    $scope.performFixation = function () {
+        RefBookApi.rb_fixate(rb_code, $scope.version).then(function (result) {
+            NotificationService.notify(200, 'Справочник зафиксирован в версии {0}'.format($scope.version), 'success', 10000);
+            return result;
+        }).then(init)
+    };
+    init();
 }])
 .controller('ImportController', [
     '$scope', '$routeParams', 'IntegrationsApi', 'NotificationService',
@@ -302,11 +408,17 @@ angular.module('nVesta', ['ngRoute', 'hitsl.core'])
 
         var update = function () {
             $scope.code = true;
-            return IntegrationsApi.nsi_list().then(function (result) {
-                $scope.list = result;
-                $scope.code = null;
-                return result;
-            });
+            return IntegrationsApi.nsi_list().then(
+                function (result) {
+                    $scope.list = result;
+                    $scope.code = null;
+                    return result;
+                },
+                function (result) {
+                    NotificationService.notify(500, 'Загрузка списка справочников не удалась', 'danger');
+                    return result;
+                }
+            );
         };
         update();
 
@@ -320,6 +432,7 @@ angular.module('nVesta', ['ngRoute', 'hitsl.core'])
                 },
                 function (result) {
                     $scope.code = null;
+                    NotificationService.notify(500, 'Загрузка справочника {0} ({1}) из НСИ не удалась.'.format(data.name, data.code), 'danger');
                     return result;
                 }
             )

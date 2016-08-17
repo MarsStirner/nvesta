@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-import bson
 import flask
 
 from hitsl_utils.api import api_method, ApiException
 from nvesta.api.app import module
-from nvesta.library.shape import RefBookRegistry
+from nvesta.library.rb.registry import RefBookRegistry
+from nvesta.library.utils import bail_out
 
 __author__ = 'viruzzz-kun'
 
@@ -66,50 +66,12 @@ def rb_put(rb_code):
     return rb.meta
 
 
-@module.route('/v2/rb/<rb_code>/data/', methods=['GET'])
+@module.route('/v2/rb/<rb_code>/fix/', methods=['POST'])
 @api_method
-def rb_records_get(rb_code):
-    """
-    Получение всех данных из справочника
-    :param rb_code:
-    :return:
-    """
-    skip = flask.request.args.get('skip') or None
-    limit = flask.request.args.get('limit') or 100
+def rb_version_fix(rb_code):
+    version = flask.request.args.get('version') or bail_out(ApiException(400, 'Need "version" argument'))
     rb = RefBookRegistry.get(rb_code)
-    return rb.find({}, 'code', limit=limit, skip=skip)
+    rb.fixate(version)
+    return rb.meta
 
-
-@module.route('/v2/rb/<rb_code>/data/<field>/<rec_id>/', methods=['GET'])
-@api_method
-def rb_record_get_id(rb_code, field, rec_id):
-    """
-    Получение записи из справочника
-    :param rb_code:
-    :param rec_id:
-    :return:
-    """
-    rb = RefBookRegistry.get(rb_code)
-    record = rb.find_one(field, rec_id)
-    return record
-
-
-@module.route('/v2/rb/<rb_code>/data/<field>/<rec_id>/', methods=['PUT'])
-@api_method
-def rb_record_put_id(rb_code, field, rec_id):
-    rb = RefBookRegistry.get(rb_code)
-    record = rb.find_one(field, rec_id)
-    record.update(flask.request.get_json())
-    rb.save(record)
-    return record
-
-
-@module.route('/v2/rb/<rb_code>/data/', methods=['POST'])
-@api_method
-def rb_record_post(rb_code):
-    rb = RefBookRegistry.get(rb_code)
-    record = rb.record_factory()
-    record.update(flask.request.get_json())
-    rb.save(record)
-    return record
 

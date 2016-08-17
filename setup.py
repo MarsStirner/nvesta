@@ -13,7 +13,7 @@ def read(fname):
 
 setup(
     name='nvesta',
-    version='0.1a',
+    version='0.2',
     url='https://stash.bars-open.ru/scm/medvtr/nvesta.git',
     author='hitsl',
     description='Reference Book subsystem',
@@ -37,7 +37,6 @@ setup(
         'Flask',
         'Flask-Fanstatic',
         'Flask-PyMongo',
-        'Flask-Cache',
         'Requests',
         'js.bootstrap',
         'js.angular',
@@ -53,6 +52,7 @@ setup(
             'vesta-update-nsi=nvesta.cli:update_nsi_dicts',
             'vesta-migrate-v1=nvesta.cli:migrate_from_v1',
             'vesta-kladr-maintenance=nvesta.cli:kladr_maintenance',
+            'vesta-autofix=nvesta.cli:autofix',
         }
     },
     classifiers=[

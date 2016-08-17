@@ -1,0 +1,54 @@
+<div class="row">
+    <div class="col-md-3">
+        <div class="form-group">
+            <label>Код: </label>
+            <span ng-bind="meta.code"></span>
+        </div>
+    </div>
+    <div class="col-md-9">
+        <div class="form-group">
+            <label>Наименование: </label>
+            <span ng-bind="meta.name"></span>
+        </div>
+    </div>
+</div>
+<div class="row marginal">
+    <div class="col-md-12 text-right">
+        <label>Версия: </label>
+        <span ng-bind="meta.version"></span>
+        <a class="btn btn-success" ng-href="#/edit/[[ rb_code ]]/data"><i class="fa fa-chevron-left"></i> Редактировать</a>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-12 text-right">
+        <div class="form-group">
+            <span class="input-group">
+                <label class="input-group-addon">Версия</label>
+                <input ng-model="version" class="form-control">
+                <span class="input-group-btn">
+                    <button class="btn btn-danger" ng-click="performFixation()" ng-disabled="!data.length"><i class="fa fa-bolt"></i> Выполнить</button>
+                </span>
+            </span>
+        </div>
+    </div>
+</div>
+<table class="table">
+    <thead>
+    <tr>
+        <th ng-repeat="field in meta.fields" ng-bind="field.key"></th>
+        <th class="col-md-1"></th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr ng-repeat="record in data" ng-class="{'record-deleted': record._meta.delete, 'record-new': record._meta.draft, 'record-dirty': !!record._meta.dirty}">
+        <td ng-repeat="field in meta.fields">
+            <div class="form-group">
+                <span class="form-control-static" ng-if="!record.$edit" ng-bind="record[field.key]"></span>
+            </div>
+        </td>
+        <td>
+            <a href="" ng-if="!record.$edit" ng-click="resetRecord(record)">Откатить</a>
+        </td>
+    </tr>
+    </tbody>
+</table>

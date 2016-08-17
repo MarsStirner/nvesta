@@ -5,7 +5,6 @@ from nvesta.library.nsi.client import NsiClient
 from hitsl_utils.api import api_method
 from nvesta.api.app import module
 from nvesta.library.nsi.data import kladr_maintenance, list_nsi_dictionaries, import_nsi_dict
-from nvesta.systemwide import cache
 
 __author__ = 'viruzzz-kun'
 
@@ -29,7 +28,6 @@ def integrations_nsi_import():
     )
     nsi_dict = request.get_json()
     result = import_nsi_dict(nsi_dict, client)
-    cache.delete_memoized(integrations_nsi_list)
     return result
 
 

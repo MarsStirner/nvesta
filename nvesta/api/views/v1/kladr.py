@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
-import flask
 
 from hitsl_utils.api import crossdomain
 from hitsl_utils.safe import safe_dict, safe_int
 from nvesta.api.app import module
-from nvesta.api.views.v1.apiutils import v1_jsonify, v1_api_method
-from nvesta.library.shape import RefBookRegistry
+from nvesta.api.views.v1.apiutils import v1_api_method
+from nvesta.library.rb.registry import RefBookRegistry
 from nvesta.library.utils import prepare_find_params
-from nvesta.systemwide import cache
 
 CITY_CODE = 'KLD172'
 STREET_CODE = 'STR172'
@@ -17,7 +15,6 @@ STREET_CODE = 'STR172'
 @module.route('/kladr/city/search/<value>/<int:limit>/', methods=['GET'])
 @crossdomain('*', methods=['GET'])
 @v1_api_method
-@cache.memoize(86400)
 def search_city(value, limit=None):
     rb = RefBookRegistry.get(CITY_CODE)
     find = {
@@ -36,7 +33,6 @@ def search_city(value, limit=None):
 @module.route('/kladr/psg/search/<value>/<int:limit>/', methods=['GET'])
 @crossdomain('*', methods=['GET'])
 @v1_api_method
-@cache.memoize(86400)
 def search_city_country(value, limit=None):
     rb = RefBookRegistry.get(CITY_CODE)
     find = {
@@ -56,7 +52,6 @@ def search_city_country(value, limit=None):
 @module.route('/kladr/street/search/<city_code>/<value>/<int:limit>/', methods=['GET'])
 @crossdomain('*', methods=['GET'])
 @v1_api_method
-@cache.memoize(86400)
 def search_street(city_code, value=None, limit=None):
     rb = RefBookRegistry.get(STREET_CODE)
     find = {
@@ -80,7 +75,6 @@ def search_street(city_code, value=None, limit=None):
 @module.route('/kladr/city/<code>/', methods=['GET'])
 @crossdomain('*', methods=['GET'])
 @v1_api_method
-@cache.memoize(86400)
 def get_city(code):
     rb = RefBookRegistry.get(CITY_CODE)
     find = {'identcode': code}
@@ -92,7 +86,6 @@ def get_city(code):
 @module.route('/kladr/street/<code>/', methods=['GET'])
 @crossdomain('*', methods=['GET'])
 @v1_api_method
-@cache.memoize(86400)
 def get_street(code):
     rb = RefBookRegistry.get(STREET_CODE)
     find = {'identcode': code}

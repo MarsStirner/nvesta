@@ -12,6 +12,16 @@
         </div>
     </div>
 </div>
+<div class="row">
+    <div class="col-md-12 text-right">
+        <label>Версия: </label>
+        <select class="form-control form-control-cheated" ng-options="item as format_version(item) for item in versions" ng-model="selected_version"></select>
+        <a class="btn btn-danger" ng-href="#/edit/[[ rb_code ]]/fixate" ng-if="!meta.oid && selected_version === null"><i class="fa fa-bolt"></i> Зафиксировать</a>
+        <button class="btn btn-primary" ng-click="addRow()" ng-if="!meta.oid && selected_version === null">
+            <i class="fa fa-plus"></i> Добавить
+        </button>
+    </div>
+</div>
 <table class="table">
     <thead>
     <tr>
@@ -20,7 +30,7 @@
     </tr>
     </thead>
     <tbody>
-    <tr ng-repeat="record in data">
+    <tr ng-repeat="record in data" ng-class="{'record-deleted': record._meta.delete, 'record-new': record._meta.draft, 'record-dirty': !!record._meta.dirty}">
         <td ng-repeat="field in meta.fields">
             <div class="form-group">
                 <input class="form-control" type="text" ng-model="record.$edit[field.key]" ng-if="!!record.$edit"/>
@@ -28,15 +38,14 @@
             </div>
         </td>
         <td>
-            <a href="" ng-if="!record.$edit" ng-click="editRecord(record)">Правка</a>
-            <a href="" ng-if="!!record.$edit" ng-click="cancelRecord(record)">Отмена</a>
-            <a href="" ng-if="!!record.$edit" ng-click="saveRecord(record)">Сохранить</a>
+            <div ng-if="!meta.oid && selected_version === null">
+                <a href="" ng-if="!record.$edit && !record._meta.delete" ng-click="editRecord(record)">Правка</a>
+                <a href="" ng-if="!record.$edit && record._meta.delete" ng-click="resetRecord(record)">Восстановить</a>
+                <a href="" ng-if="!record.$edit && !record._meta.delete" ng-click="deleteRecord(record)">Удалить</a>
+                <a href="" ng-if="!!record.$edit" ng-click="cancelRecord(record)">Отмена</a>
+                <a href="" ng-if="!!record.$edit" ng-click="saveRecord(record)">Сохранить</a>
+            </div>
         </td>
     </tr>
     </tbody>
 </table>
-<div class="row">
-    <div class="col-md-12 text-right">
-        <button class="btn btn-primary" ng-click="addRow()"><i class="fa fa-plus"></i> Добавить</button>
-    </div>
-</div>

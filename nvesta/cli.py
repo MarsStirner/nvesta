@@ -4,10 +4,11 @@ import argparse
 import sys
 
 import pymongo
+
 from hitsl_utils.safe import safe_traverse, safe_dict
 from nvesta.library.nsi.client import NsiClient
 from nvesta.library.nsi.data import list_nsi_dictionaries, import_nsi_dict
-from nvesta.library.shape import RefBookRegistry
+from nvesta.library.rb.registry import RefBookRegistry
 
 __author__ = 'viruzzz-kun'
 
@@ -83,6 +84,41 @@ def kladr_maintenance():
 
     from nvesta.library.nsi.data import kladr_maintenance
     kladr_maintenance()
+
+
+def autofix():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--all', action='store_const', const=True, default=False)
+    parser.add_argument('--host', default=None)
+    parser.add_argument('--port', default=None)
+    parser.add_argument('--db', default=nvesta_db)
+    parser.add_argument('--list', action='store_const', const=True, default=False)
+    parser.add_argument('version')
+
+    args = parser.parse_args(sys.argv[1:])
+
+    mongo = pymongo.MongoClient(
+        host=args.host,
+        port=args.port,
+    )
+
+    RefBookRegistry.bootstrap(mongo[args.db])
+
+    refbooks = RefBookRegistry.list()
+    to_fix = set(
+        rb for rb in refbooks if not rb.meta.version
+    )
+    if args.list:
+        for rb in to_fix:
+            print (u"%s -- %s" % (rb.code, rb.name))
+    elif args.all:
+        for rb in refbooks:
+            if rb in to_fix:
+                rb.fixate(args.version)
+            else:
+                rb._fix_meta(args.version)
+    else:
+        parser.print_help()
 
 
 def migrate_from_v1():

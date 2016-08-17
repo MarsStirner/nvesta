@@ -3,10 +3,10 @@ import bson
 from flask import request
 
 from hitsl_utils.api import ApiException, crossdomain
-from nvesta.api.views.v1.apiutils import v1_api_method
-from nvesta.library.shape import RefBookRegistry
-from nvesta.library.utils import prepare_find_params, force_json
 from nvesta.api.app import module
+from nvesta.api.views.v1.apiutils import v1_api_method
+from nvesta.library.rb.registry import RefBookRegistry
+from nvesta.library.utils import prepare_find_params, force_json
 
 """API для работы с конкретным справочником"""
 

@@ -26,3 +26,5 @@ def force_json(_request):
     return data
 
 
+def bail_out(exc):
+    raise exc

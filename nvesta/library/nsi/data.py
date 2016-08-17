@@ -6,7 +6,8 @@ from datetime import datetime
 from pymongo import ASCENDING
 
 from hitsl_utils.api import ApiException
-from nvesta.library.shape import RefBookRegistry
+from nvesta.library.rb.rbmeta import FieldMeta
+from nvesta.library.rb.registry import RefBookRegistry
 
 logger = logging.getLogger('simple')
 logger.setLevel(logging.DEBUG)
@@ -141,20 +142,14 @@ def import_nsi_dict(nsi_dict, nsi_client):
             names = set()
             for doc in documents:
                 names.update(set(doc.iterkeys()))
-            own_names = set(field['key'] for field in rb.meta.fields)
+            own_names = set(field.key for field in rb.meta.fields)
             new_names = names - own_names
             all_names = names | own_names
             if new_names:
                 # Новые столбцы появились, надо добавить
                 log.log(u'Структура справочника изменилась. Решейпим...')
                 for key in new_names:
-                    rb.meta.fields.append({
-                        'key': key,
-                        'type': 'string',
-                        'mandatory': False,
-                        'unique': False,
-                        'link': None,
-                    })
+                    rb.meta.fields.append(FieldMeta(key=key))
                 rb.meta.reshape()
 
             key_names = (key for key in ('identcode', 'code', 'id', 'recid', 'oid') if key in all_names)
@@ -201,8 +196,7 @@ def import_nsi_dict(nsi_dict, nsi_client):
             log.log(u'Версии совпадают, не обновляем справочник')
             return
 
-    rb.meta.version = their_version
-    rb.meta.reshape()
+    rb.fixate(their_version)
     log.log(u'Справочник ({0}) обновлён'.format(code))
 
 
