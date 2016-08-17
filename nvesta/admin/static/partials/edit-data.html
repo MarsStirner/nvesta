@@ -39,8 +39,9 @@
         </td>
         <td>
             <div ng-if="!meta.oid && selected_version === null">
-                <a href="" ng-if="!record.$edit" ng-click="editRecord(record)">Правка</a>
-                <a href="" ng-if="!record.$edit" ng-click="deleteRecord(record)">Удалить</a>
+                <a href="" ng-if="!record.$edit && !record._meta.delete" ng-click="editRecord(record)">Правка</a>
+                <a href="" ng-if="!record.$edit && record._meta.delete" ng-click="resetRecord(record)">Восстановить</a>
+                <a href="" ng-if="!record.$edit && !record._meta.delete" ng-click="deleteRecord(record)">Удалить</a>
                 <a href="" ng-if="!!record.$edit" ng-click="cancelRecord(record)">Отмена</a>
                 <a href="" ng-if="!!record.$edit" ng-click="saveRecord(record)">Сохранить</a>
             </div>

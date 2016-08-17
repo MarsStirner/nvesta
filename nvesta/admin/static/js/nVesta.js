@@ -313,6 +313,14 @@ angular.module('nVesta', ['ngRoute', 'hitsl.core'])
     $scope.editRecord = function (record) {
         record.$edit = angular.copy(record);
     };
+    $scope.resetRecord = function (record) {
+        RefBookApi.rb_data_view(rb_code, record._id).then(function (result_1) {
+            RefBookApi.rb_data_update(result_1, rb_code, record._id).then(function (result_2) {
+                angular.extend(record, {_meta: {}}, result_2);
+                NotificationService.notify(200, 'Запись восстановлена', 'success', 10000)
+            })
+        })
+    };
     $scope.cancelRecord = function (record) {
         record.$edit = undefined;
         if (!record._id) {
@@ -385,7 +393,10 @@ angular.module('nVesta', ['ngRoute', 'hitsl.core'])
         }
     };
     $scope.performFixation = function () {
-        RefBookApi.rb_fixate(rb_code, $scope.version).then(init)
+        RefBookApi.rb_fixate(rb_code, $scope.version).then(function (result) {
+            NotificationService.notify(200, 'Справочник зафиксирован в версии {0}'.format($scope.version), 'success', 10000);
+            return result;
+        }).then(init)
     };
     init();
 }])
