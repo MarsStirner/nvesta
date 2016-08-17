@@ -168,6 +168,8 @@ def import_nsi_dict(nsi_dict, nsi_client):
                 for key in key_names:
                     if key in doc:
                         existing = rb.find_one({key: doc[key]})
+                        if existing:  # Нечего по сто тыщ раз искать одно и то же
+                            break
                 if not existing:
                     existing = rb.record_factory()
                 existing.update(doc)
