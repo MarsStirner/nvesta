@@ -157,7 +157,7 @@ def import_nsi_dict(nsi_dict, nsi_client):
                     })
                 rb.meta.reshape()
 
-            key_names = (key for key in ('code', 'id', 'recid', 'oid') if key in all_names)
+            key_names = (key for key in ('identcode', 'code', 'id', 'recid', 'oid') if key in all_names)
             for key in key_names:
                 rb.collection.create_index(key, sparse=True)
 
