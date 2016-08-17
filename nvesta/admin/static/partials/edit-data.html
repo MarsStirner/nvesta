@@ -16,8 +16,10 @@
     <div class="col-md-12 text-right">
         <label>Версия: </label>
         <select class="form-control form-control-cheated" ng-options="item as format_version(item) for item in versions" ng-model="selected_version"></select>
-        <a class="btn btn-danger" ng-href="#/edit/[[ rb_code ]]/fixate"><i class="fa fa-bolt"></i> Зафиксировать</a>
-        <button class="btn btn-primary" ng-click="addRow()"><i class="fa fa-plus"></i> Добавить</button>
+        <a class="btn btn-danger" ng-href="#/edit/[[ rb_code ]]/fixate" ng-if="!meta.oid && selected_version === null"><i class="fa fa-bolt"></i> Зафиксировать</a>
+        <button class="btn btn-primary" ng-click="addRow()" ng-if="!meta.oid && selected_version === null">
+            <i class="fa fa-plus"></i> Добавить
+        </button>
     </div>
 </div>
 <table class="table">
