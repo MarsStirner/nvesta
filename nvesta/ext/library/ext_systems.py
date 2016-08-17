@@ -1,7 +1,12 @@
 # -*- coding: utf-8 -*-
 from bson.objectid import ObjectId
+from pymongo.errors import DuplicateKeyError
 
 __author__ = 'viruzzz-kun'
+
+
+class ExtSystemCodeDuplicate(Exception):
+    pass
 
 
 class ExtSystemProperties(object):
@@ -34,9 +39,13 @@ class ExtSystemProperties(object):
         self.codes = [rb['code'] for rb in (record.get('refbooks') or [])]
 
     @property
-    def refbooks_list(self):
+    def refbooks_metas(self):
         from nvesta.library.rb.registry import RefBookRegistry
-        return [RefBookRegistry.get(code) for code in self.codes]
+        return [
+            RefBookRegistry.get(code).meta
+            for code in self.codes
+            if RefBookRegistry.get(code)
+        ]
 
     @property
     def refbooks_dict(self):
@@ -44,6 +53,7 @@ class ExtSystemProperties(object):
         return {
             code: RefBookRegistry.get(code)
             for code in self.codes
+            if RefBookRegistry.get(code)
         }
 
     def as_db_record(self, with_id=False):
@@ -60,7 +70,7 @@ class ExtSystemProperties(object):
         result = {
             'code': self.code,
             'name': self.name,
-            'refbooks': self.refbooks_list,
+            'refbooks': self.refbooks_metas,
         }
         if self.id:
             result['_id'] = str(self.id)
@@ -72,18 +82,20 @@ class ExtSystemProperties(object):
         return self.as_json()
 
     def save(self):
-        if self.id:
-            self.collection.update_one(
-                {'_id': self.id},
-                {'$set': self.as_db_record()}
-            )
-        else:
-            result = self.collection.insert(self.as_db_record())
-            self.id = result.inserted_id
+        try:
+            if self.id:
+                self.collection.update_one(
+                    {'_id': self.id},
+                    {'$set': self.as_db_record()}
+                )
+            else:
+                self.id = self.collection.insert(self.as_db_record())
+        except DuplicateKeyError:
+            raise ExtSystemCodeDuplicate(self.code)
 
     def delete(self):
         if self.id:
-            self.code.remove_one({'_id': self.id})
+            self.collection.delete_one({'_id': self.id})
 
     @classmethod
     def find_by_code(cls, code):

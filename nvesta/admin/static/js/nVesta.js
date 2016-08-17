@@ -3,7 +3,7 @@
  */
 "use strict";
 
-angular.module('nVesta', ['ngRoute', 'hitsl.core'])
+angular.module('nVesta', ['ngRoute', 'hitsl.core', 'ui.select', 'ngSanitize'])
 .config(['$routeProvider', '$locationProvider', function ($routeProvider, $locationProvider) {
     //$locationProvider.html5Mode(true);
     $routeProvider
@@ -26,6 +26,10 @@ angular.module('nVesta', ['ngRoute', 'hitsl.core'])
         .when('/edit/:rb_code/fixate', {
             templateUrl: '/admin/static/partials/edit-fixate.html',
             controller: 'EditRbFixateController'
+        })
+        .when('/external/', {
+            templateUrl: '/admin/static/partials/external.html',
+            controller: 'EditExternalController'
         })
         .when('/import', {
             templateUrl: '/admin/static/partials/import.html',
@@ -63,6 +67,10 @@ angular.module('nVesta', ['ngRoute', 'hitsl.core'])
                     kladr: '/api/integrations/nsi/utils/kladr/'
                 }
             }
+        },
+        ext: {
+            list: '/ext/api/v1/setup/',
+            item: '/ext/api/v1/setup/{0}'
         }
     }
 })
@@ -135,6 +143,31 @@ angular.module('nVesta', ['ngRoute', 'hitsl.core'])
             if (rb_list[i].code == rb_code) {
                 return rb_list[i];
             }
+        }
+    }
+}])
+.service('ExtSysControlApi', ['ApiCalls', 'Config', function (ApiCalls, Config) {
+    this.list = function () {
+        return ApiCalls.wrapper('GET', Config.api.ext.list)
+    };
+    this.create = function (data) {
+        return ApiCalls.wrapper('POST', Config.api.ext.list, undefined, data)
+    };
+    this.update = function (code, data) {
+        return ApiCalls.wrapper('PUT', Config.api.ext.item.format(code || data.code), undefined, data)
+    };
+    this.delete = function (code) {
+        return ApiCalls.wrapper('DELETE', Config.api.ext.item.format(code))
+    };
+    this.get = function (code) {
+        return ApiCalls.wrapper('GET', Config.api.ext.item.format(code))
+    };
+    this.empty = function () {
+        return {
+            _id: null,
+            code: '',
+            name: '',
+            refbooks: []
         }
     }
 }])
@@ -389,6 +422,61 @@ angular.module('nVesta', ['ngRoute', 'hitsl.core'])
     };
     init();
 }])
+.controller('EditExternalController', [
+    '$scope', '$routeParams', '$window', 'ExtSysControlApi', 'RefBookRegistry', 'NotificationService',
+function ($scope,$routeParams, $window, ExtSysControlApi, RefBookRegistry, NotificationService) {
+    $scope.rb_list = RefBookRegistry.rb_list;
+    var ext_systems = $scope.ext_systems = [];
+    function init() {
+        ExtSysControlApi.list().then(function (result) {
+            _.replace_array(ext_systems, result);
+        });
+        RefBookRegistry.reload();
+    }
+
+    $scope.addRow = function () {
+        var new_record = ExtSysControlApi.empty();
+        ext_systems.unshift({$edit: new_record});
+    };
+    $scope.editRecord = function (record) {
+        record.$edit = angular.copy(record);
+    };
+    $scope.cancelRecord = function (record) {
+        record.$edit = undefined;
+        if (!record._id) {
+            _.replace_array(ext_systems, _.without(ext_systems, record));
+        }
+    };
+    var after_save_record_factory = function (record) {
+        return function (result) {
+            angular.extend(record, result);
+            record.$edit = undefined;
+            NotificationService.notify(200, 'Интеграция сохранена', 'success', 10000);
+            return result;
+        }
+    };
+    $scope.saveRecord = function (record) {
+        if (!record._id) {
+            ExtSysControlApi.create(record.$edit).then(after_save_record_factory(record))
+        } else {
+            ExtSysControlApi.update(record.code, record.$edit).then(after_save_record_factory(record));
+        }
+    };
+    $scope.deleteRecord = function (record) {
+        if (!record._id) {
+            _.replace_array(ext_systems, _.without(ext_systems, record))
+        } else {
+            if ($window.confirm('Действительно удалить интеграцию?')) {
+                ExtSysControlApi.delete(record.code).then(function () {
+                    _.replace_array(ext_systems, _.without(ext_systems, record));
+                    NotificationService.notify(200, 'Интеграция удалена', 'warning', 10000);
+                })
+            }
+        }
+    };
+
+    init();
+}])
 .controller('ImportController', [
     '$scope', '$routeParams', 'IntegrationsApi', 'NotificationService',
     function ($scope, $routeParams, IntegrationsApi, NotificationService) {
@@ -449,4 +537,14 @@ angular.module('nVesta', ['ngRoute', 'hitsl.core'])
         };
     }
 ])
+.filter('pluck', function () {
+    return function (array, attribute) {
+        return _.pluck(array, attribute)
+    }
+})
+.filter('join', function () {
+    return function (array, attribute) {
+        return array.join(attribute)
+    }
+})
 ;

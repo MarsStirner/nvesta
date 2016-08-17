@@ -3,7 +3,7 @@ from flask import request
 
 from hitsl_utils.api import ApiException, api_method
 from nvesta.ext.app import module
-from nvesta.ext.library.ext_systems import ExtSystemProperties
+from nvesta.ext.library.ext_systems import ExtSystemProperties, ExtSystemCodeDuplicate
 from nvesta.library.utils import bail_out
 
 __author__ = 'viruzzz-kun'
@@ -19,8 +19,14 @@ def ext_setup_list():
 @api_method
 def ext_setup_new():
     prop = ExtSystemProperties()
-    prop.update(request.json)
-    prop.save()
+    data = request.json
+    if not data.get('code'):
+        raise ApiException(400, u'Must have valid code')
+    prop.update(data)
+    try:
+        prop.save()
+    except ExtSystemCodeDuplicate:
+        raise ApiException(400, 'Cannot insert External System with code %s. Code already used')
     return prop
 
 

@@ -22,7 +22,8 @@ setup(
     packages=find_packages(),
     package_data={
         'nvesta': [
-            'static/*',
+            'static/*.js',
+            'static/*.css',
             'templates/*',
         ],
         'nvesta.admin': [
