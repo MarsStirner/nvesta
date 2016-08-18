@@ -45,5 +45,5 @@ def api_ext_get_dict_item(ext_sys_code, rb_code, field, rec_id):
     refbooks_dict = props.refbooks_dict
     if rb_code not in refbooks_dict:
         raise ApiException(404, '"%s" not found for integration "%s"' % (rb_code, ext_sys_code))
-    return refbooks_dict[rb_code].find(field, rec_id, version=version)
+    return refbooks_dict[rb_code].find_one(field, rec_id, version=version)
 
