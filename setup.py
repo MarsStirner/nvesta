@@ -24,6 +24,7 @@ setup(
         'nvesta': [
             'static/*.js',
             'static/*.css',
+            'static/angular-ui-select/*',
             'templates/*',
         ],
         'nvesta.admin': [
