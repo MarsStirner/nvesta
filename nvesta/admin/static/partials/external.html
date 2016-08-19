@@ -1,0 +1,52 @@
+<div class="row">
+    <div class="col-md-12 text-right">
+        <button class="btn btn-primary" ng-click="addRow()"><i class="fa fa-plus"></i> Добавить</button>
+    </div>
+</div>
+<table class="table">
+    <thead>
+    <tr>
+        <th class="col-md-2">Код</th>
+        <th class="col-md-3">Наименование</th>
+        <th class="col-md-6">Справочники</th>
+        <th class="col-md-1"></th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr ng-repeat="record in ext_systems">
+        <td>
+            <div class="form-group">
+                <input class="form-control" type="text" ng-model="record.$edit.code" ng-if="!!record.$edit"/>
+                <span class="form-control-static" ng-if="!record.$edit" ng-bind="record.code"></span>
+            </div>
+        </td>
+        <td>
+            <div class="form-group">
+                <input class="form-control" type="text" ng-model="record.$edit.name" ng-if="!!record.$edit"/>
+                <span class="form-control-static" ng-if="!record.$edit" ng-bind="record.name"></span>
+            </div>
+        </td>
+        <td>
+            <div ng-if="!!record.$edit">
+                <ui-select multiple ng-model="record.$edit.refbooks" theme="bootstrap" title="Доступные справочники" close-on-select="false" style="max-width: 800px;">
+                    <ui-select-match placeholder="Доступные справочники...">[[ $item.code ]]</ui-select-match>
+                    <ui-select-choices repeat="rb in rb_list | filter:$select.search">
+                        [[ rb.code ]] - [[ rb.name ]]
+                    </ui-select-choices>
+                </ui-select>
+            </div>
+            <div class="form-group">
+                <span class="form-control-static" ng-if="!record.$edit" ng-bind="record.refbooks | pluck:'code' | join:', ' "></span>
+            </div>
+        </td>
+        <td>
+            <div>
+                <a href="" ng-if="!record.$edit" ng-click="editRecord(record)">Правка</a>
+                <a href="" ng-if="!record.$edit" ng-click="deleteRecord(record)">Удалить</a>
+                <a href="" ng-if="!!record.$edit" ng-click="cancelRecord(record)">Отмена</a>
+                <a href="" ng-if="!!record.$edit" ng-click="saveRecord(record)">Сохранить</a>
+            </div>
+        </td>
+    </tr>
+    </tbody>
+</table>
