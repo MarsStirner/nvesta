@@ -13,7 +13,7 @@ def read(fname):
 
 setup(
     name='nvesta',
-    version='0.1a',
+    version='0.2.0',
     url='https://stash.bars-open.ru/scm/medvtr/nvesta.git',
     author='hitsl',
     description='Reference Book subsystem',
