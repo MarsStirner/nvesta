@@ -244,6 +244,7 @@ class RefBook(object):
     record_factory = None
 
     def find(self, kwargs, sort=None, limit=None, skip=None):
+        kwargs = self._prepare_search_params(kwargs)
         cursor = self.collection.find(kwargs)
         if limit:
             cursor = cursor.limit(limit)
@@ -268,6 +269,37 @@ class RefBook(object):
             return self.record_factory(self.collection.find_one({kwargs: rec_id}))
         else:
             return self.record_factory(self.collection.find_one(kwargs))
+
+    def _prepare_search_params(self, kwargs):
+        if not len(kwargs.keys()):
+            return {}
+        elif 'query' in kwargs:
+            return {
+                '$or': [
+                    {
+                        'name': {'$regex': kwargs['query'], '$options': 'i'}
+                    },
+                    {
+                        'code': {'$regex': kwargs['query'], '$options': 'i'}
+                    }
+                ]
+            }
+        elif len(kwargs.keys()) == 1:
+            field_name = kwargs.keys()[0]
+            # if refbook has field field_name...
+            return {
+                field_name: {'$regex': kwargs[field_name], '$options': 'i'}
+            }
+        else:
+            parts = [(f, v) for f, v in kwargs.iteritems()]  # if refbook has field f...
+            return {
+                '$and': [
+                    {
+                        field_name: {'$regex': field_val, '$options': 'i'}
+                    }
+                    for field_name, field_val in parts
+                ]
+            }
 
     def save(self, rb_record):
         """

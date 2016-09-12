@@ -17,4 +17,4 @@ def hello_world():
 
 
 if __name__ == '__main__':
-    app.run(port=5006)
+    app.run(port=app.config.get('SERVER_PORT', 6603))

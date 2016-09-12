@@ -3,6 +3,7 @@ import bson
 import flask
 
 from hitsl_utils.api import api_method, ApiException
+from hitsl_utils.safe import safe_int
 from nvesta.api.app import module
 from nvesta.library.shape import RefBookRegistry
 
@@ -74,10 +75,11 @@ def rb_records_get(rb_code):
     :param rb_code:
     :return:
     """
-    skip = flask.request.args.get('skip') or None
-    limit = flask.request.args.get('limit') or 100
+    args = flask.request.args.to_dict()
+    skip = args.pop('skip', None)
+    limit = safe_int(args.pop('limit', 100))
     rb = RefBookRegistry.get(rb_code)
-    return rb.find({}, 'code', limit=limit, skip=skip)
+    return rb.find(args, 'code', limit=limit, skip=skip)
 
 
 @module.route('/v2/rb/<rb_code>/data/<field>/<rec_id>/', methods=['GET'])
