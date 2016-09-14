@@ -243,8 +243,9 @@ class RefBook(object):
     collection = None
     record_factory = None
 
-    def find(self, kwargs, sort=None, limit=None, skip=None):
-        kwargs = self._prepare_search_params(kwargs)
+    def find(self, kwargs, sort=None, limit=None, skip=None, prepare=False):
+        if prepare:
+            kwargs = self._prepare_search_params(kwargs)
         cursor = self.collection.find(kwargs)
         if limit:
             cursor = cursor.limit(limit)

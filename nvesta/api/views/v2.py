@@ -79,7 +79,7 @@ def rb_records_get(rb_code):
     skip = args.pop('skip', None)
     limit = safe_int(args.pop('limit', 100))
     rb = RefBookRegistry.get(rb_code)
-    return rb.find(args, 'code', limit=limit, skip=skip)
+    return rb.find(args, 'code', limit=limit, skip=skip, prepare=True)
 
 
 @module.route('/v2/rb/<rb_code>/data/<field>/<rec_id>/', methods=['GET'])
