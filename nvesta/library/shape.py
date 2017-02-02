@@ -409,6 +409,19 @@ class RefBookRegistry(object):
         for rb in cls.list():
             rb.ensure_default_indexes()
 
+        from pymongo import ASCENDING
+        # kladr indexes
+        kld172 = cls.db['refbook.KLD172']
+        kld172.create_index('identcode')
+        kld172.create_index('is_actual')
+
+        str172 = cls.db['refbook.STR172']
+        str172.create_index('identcode')
+        str172.create_index([
+            ('identparent', ASCENDING),
+            ('is_actual', ASCENDING)
+        ])
+
     @classmethod
     def invalidate(cls, code=None):
         if code is not None:

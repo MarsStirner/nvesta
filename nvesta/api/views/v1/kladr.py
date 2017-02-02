@@ -68,8 +68,6 @@ def search_street(city_code, value=None, limit=None):
         find.update({
             '$or': [
                 {'name': prepared},
-                {'fulltype': prepared},
-                {'shorttype': prepared},
                 {'identcode': value}
             ]
         })
