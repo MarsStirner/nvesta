@@ -413,7 +413,10 @@ class RefBookRegistry(object):
         # kladr indexes
         kld172 = cls.db['refbook.KLD172']
         kld172.create_index('identcode')
-        kld172.create_index('is_actual')
+        kld172.create_index([
+            ('level', ASCENDING),
+            ('is_actual', ASCENDING)
+        ])
 
         str172 = cls.db['refbook.STR172']
         str172.create_index('identcode')
