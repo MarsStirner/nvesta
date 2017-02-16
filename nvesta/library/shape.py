@@ -275,15 +275,23 @@ class RefBook(object):
         if not len(kwargs.keys()):
             return {}
         elif 'query' in kwargs:
-            return {
-                '$or': [
+            query = kwargs.pop('query')
+            main_filters = [
+                {'$or': [
                     {
-                        'name': {'$regex': kwargs['query'], '$options': 'i'}
+                        'name': {'$regex': query, '$options': 'i'}
                     },
                     {
-                        'code': {'$regex': kwargs['query'], '$options': 'i'}
+                        'code': {'$regex': query, '$options': 'i'}
                     }
-                ]
+                ]},
+            ]
+            extra_filters = [
+                {k: {'$regex': v, '$options': 'i'}}
+                for k, v in kwargs.items()
+            ]
+            return {
+                '$and': main_filters + extra_filters
             }
         elif len(kwargs.keys()) == 1:
             field_name = kwargs.keys()[0]
