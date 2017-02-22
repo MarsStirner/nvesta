@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-import bson
 import flask
+
+from pymongo import ASCENDING
 
 from hitsl_utils.api import api_method, ApiException
 from hitsl_utils.safe import safe_int
@@ -79,7 +80,7 @@ def rb_records_get(rb_code):
     skip = args.pop('skip', None)
     limit = safe_int(args.pop('limit', 100))
     rb = RefBookRegistry.get(rb_code)
-    return rb.find(args, ('idx', 'code'), limit=limit, skip=skip, prepare=True)
+    return rb.find(args, [('idx', ASCENDING), ('code', ASCENDING)], limit=limit, skip=skip, prepare=True)
 
 
 @module.route('/v2/rb/<rb_code>/data/<field>/<rec_id>/', methods=['GET'])
