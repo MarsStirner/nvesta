@@ -65,6 +65,7 @@ def rb_put(rb_code):
     rb = RefBookRegistry.get(rb_code)
     rb.meta.update(j)
     rb.meta.reshape()
+    RefBookRegistry.invalidate(rb_code)
     return rb.meta
 
 
