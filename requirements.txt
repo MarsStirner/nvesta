@@ -5,9 +5,9 @@ Flask-Cache
 Requests
 zeep
 js.bootstrap
-git+https://github.com/hitsl/js.underscore.git#egg=js.underscore
-git+https://github.com/hitsl/js.momentjs.git#egg=js.momentjs
-git+https://github.com/hitsl/js.fontawesome.git#egg=js.fontawesome
-git+https://github.com/hitsl/js.ui_bootstrap.git#egg=js.ui_bootstrap
-git+https://github.com/hitsl/js.angular.git#egg=js.angular
-git+https://github.com/hitsl/hitsl.utils.git@develop#egg=hitsl_utils
+git+https://stash.bars-open.ru/scm/medvtr/js.underscore.git#egg=js.underscore
+git+https://stash.bars-open.ru/scm/medvtr/js.momentjs.git#egg=js.momentjs
+git+https://stash.bars-open.ru/scm/medvtr/js.fontawesome.git#egg=js.fontawesome
+git+https://stash.bars-open.ru/scm/medvtr/js.ui_bootstrap.git#egg=js.ui_bootstrap
+git+https://stash.bars-open.ru/scm/medvtr/js.angular.git#egg=js.angular
+git+https://stash.bars-open.ru/scm/medvtr/hitsl.utils.git@develop#egg=hitsl_utils
